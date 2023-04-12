@@ -1,0 +1,10 @@
+#user-container  {
+   display: flex;
+    flex-direction: row;
+    flex: 12;
+  
+}
+
+body{
+    color: #000;
+}
