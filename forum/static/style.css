@@ -1,0 +1,27 @@
+#user-container  {
+   display: flex;  
+}
+
+#userlogin{
+    margin-left: 50px;
+}
+#usersignup {
+    margin-left: 100px;
+}
+
+#posts{
+    margin-top: 100px;
+    display: flex;
+}
+#postcontainer{
+    margin-top: 50px;
+}
+#postheading{
+   padding-left: 50px;
+}
+#postcategories{
+  margin-top:10px;
+}
+body{
+    color: #000;
+}

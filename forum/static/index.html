@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My Web Forum</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <!-- Login Section -->
+    <div id="user-container">
+      <div id="userlogin">
+        <h2>Login</h2>
+        <form action="/login" method="POST">
+          <label for="username">Username:</label>
+          <input type="text" id="username" name="username"><br><br>
+          <label for="password">Password:</label>
+          <input type="password" id="password" name="password"><br><br>
+          <input type="submit" value="Login">
+        </form>
+      </div>
+
+      <!-- Signup Section -->
+      <div id="usersignup">
+        <h2>Sign up</h2>
+        <form>
+          <label for="newusername">New Username:</label>
+          <input type="text" id="newusername" name="newusername"><br><br>
+          <label for="newpassword">New Password:</label>
+          <input type="password" id="newpassword" name="newpassword"><br><br>
+          <input type="submit" value="Sign up">
+        </form>
+      </div>
+    </div>
+
+    <!-- Posts Section -->
+    <div id="posts">
+      <div id="postheading">
+        <h2 >Posts</h2>
+        <!-- Filter Section -->
+        <div id="postcategories">
+          <label for="category">Category:</label>
+          <select id="category" name="category">
+            <option value="">All</option>
+            <option value="technology">Technology</option>
+            <option value="gaming">Gaming</option>
+            <option value="sports">Sports</option>
+            <option value="self-care">Self-Care</option>
+            <option value="traveling">Traveling</option>
+            <option value="food">Food</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Post List -->
+      <div id="postcontainer">
+        <ul id="postlist">
+          <li>
+            <h3 id="posttitle">Post Title</h3>
+            <p id="postcontent">Post Content</p>
+            <p class="category">Technology</p>
+            
+            <!-- Like and Dislike Section -->
+            <div id="likescontainer">
+              <button id="likeButton">Like</button>
+              <span id="likeCount">0</span>
+              <button id="dislikeButton">Dislike</button>
+              <span id="dislikeCount">0</span>
+            </div>
+
+            <!-- Comment Section -->
+            <div>
+              <h4>Comments</h4>
+              <ul>
+                <li>
+                  <p>Comment Content</p>
+                  
+                  <!-- Like and Dislike Section -->
+                  <div id="likescontainer">
+                    <button id="likeButton">Like</button>
+                    <span id="likeCount">0</span>
+                    <button id="dislikeButton">Dislike</button>
+                    <span id="dislikeCount">0</span>
+                  </div>
+                </li>
+              </ul>
+
+             
+              <form>
+                <label for="comment">Add a comment:</label><br>
+                <textarea id="comment" name="comment"></textarea><br>
+                <input type="submit" value="Submit">
+              </form>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+  </html>    

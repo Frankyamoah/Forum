@@ -1,4 +1,4 @@
-package main
+package forum
 
 import (
 	"database/sql"
@@ -9,7 +9,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func Insert(table string, colm []string, values []interface{}) error {
+func InsertInfo(table string, colm []string, values []interface{}) error {
 	dataBase, err := sql.Open("sqlite3", "database/forumDB.sqlite")
 	if err != nil {
 		log.Fatal(err, "Error opening database")
@@ -25,14 +25,14 @@ func Insert(table string, colm []string, values []interface{}) error {
 
 	_, err = dataBase.Exec(queryStmnt, values...)
 	if err != nil {
-		return err
+		log.Fatal(err, "error executing insert statement")
 	}
 	return nil
 }
 
-func Select(table string, columns []string, condition string) ([]map[string]interface{}, error) {
+func SelectInfo(table string, columns []string, condition string) ([]map[string]interface{}, error) {
 	// Open a connection to the SQL database
-	database, err := sql.Open("sqlite3", "database/forumDB.sqlite")
+	database, err := sql.Open("sqlite3", "forum/database/forumDB.sqlite")
 	if err != nil {
 		log.Fatal(err, "Error opening database")
 	}
@@ -53,7 +53,7 @@ func Select(table string, columns []string, condition string) ([]map[string]inte
 	// Execute the SQL statement
 	rows, err := database.Query(queryStmnt)
 	if err != nil {
-		return nil, err
+		log.Fatal(err, " error selecting information")
 	}
 	defer rows.Close()
 
@@ -64,7 +64,7 @@ func Select(table string, columns []string, condition string) ([]map[string]inte
 		//rows.column returns column name in table
 		rowValues, err := rows.Columns()
 		if err != nil {
-			return nil, err
+			log.Fatal(err, "error getting column names")
 		}
 		//to store all values
 		var values []interface{}
@@ -78,7 +78,7 @@ func Select(table string, columns []string, condition string) ([]map[string]inte
 		//scan values of row into interface
 		err = rows.Scan(values...)
 		if err != nil {
-			return nil, err
+			log.Fatal(err, "error scanning row values")
 		}
 		//to store row data
 		rowMap := make(map[string]interface{})
@@ -93,11 +93,11 @@ func Select(table string, columns []string, condition string) ([]map[string]inte
 	return finalResults, nil
 }
 
-func updateOrDelet(table string, operation string, columns []string, values []interface{}, condition string) (int64, error) {
+func updateOrDeleteInfo(table string, operation string, columns []string, values []interface{}, condition string) (int64, error) {
 	// Open a connection to the SQLite database
 	db, err := sql.Open("sqlite3", "database/forumDB.sqlite")
 	if err != nil {
-		return 0, err
+		log.Fatal(err, "Error opening database")
 	}
 	defer db.Close() // Make sure to close the connection at the end
 
@@ -125,44 +125,13 @@ func updateOrDelet(table string, operation string, columns []string, values []in
 	// Execute the SQL statement with the given values
 	result, err := db.Exec(queryStmnt, vals...)
 	if err != nil {
-		return 0, err
+		log.Fatal(err, "error executing update/delete statement")
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return 0, err
+		log.Fatal(err, "error returning rows affected")
 	}
 
 	return rowsAffected, nil
-}
-
-func maiin() {
-	// err := Insert("users", []string{"email", "username", "password"}, []interface{}{"exp@.com4691", "exmp108", "newuser4823"})
-	// if err != nil {
-	// 	log.Fatal(err, "Error inserting data")
-	// }
-	// fmt.Println("Data inserted successfully")
-
-	// answer, err := Select("categories", []string{"category"}, "id = 2")
-	// if err != nil {
-	// 	log.Fatal(err, "Error selecting data")
-	// }
-	// fmt.Println(answer)
-	// fmt.Println("Data selected successfully")
-
-	// Update the email address for user with ID 1
-	// rowsAffected, err := updateOrDelete("users", "update", []string{"email", "username"}, []interface{}{"johndoe@example.com", "johndoe"}, "id = 2")
-	// if err != nil {
-	// 	fmt.Println("Error updating data:", err)
-	// } else {
-	// 	fmt.Printf("Updated %d row(s) successfully.\n", rowsAffected)
-	// }
-
-	// Delete all users with a null email address
-	// rowsAffected, err := updateOrDelete("users", "delete", []string{}, nil, "id = 9")
-	// if err != nil {
-	// 	fmt.Println("Error deleting data:", err)
-	// } else {
-	// 	fmt.Printf("Deleted %d row(s) successfully.\n", rowsAffected)
-	// }
 }
