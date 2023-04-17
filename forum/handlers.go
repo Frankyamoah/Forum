@@ -3,11 +3,20 @@ package forum
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"log"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+
+type PostData struct {
+	PostTitle    string
+	PostContent  string
+	PostCategory string
+}
+
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var allUsernames []string
@@ -21,7 +30,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 		allUserInfo, err := SelectInfo("users", []string{"*"}, "")
 		if err != nil {
-			log.Fatal(err, "error retrieving info from table")
+			log.Fatal(err, "error retrieving all users")
 		}
 
 		for _, mp := range allUserInfo {
@@ -46,7 +55,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			if username == u && password == allPasswords[i] {
 				fmt.Println("username and password correct")
 				loggedIn = true
-				http.Redirect(w, r, "/static/leg.html", http.StatusSeeOther)
+				http.Redirect(w, r, "forum/static/dashboard.html", http.StatusSeeOther)
 				return
 			}
 		}
@@ -55,5 +64,57 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		http.NotFound(w, r)
+	}
+}
+
+func PostHandler(w http.ResponseWriter, r *http.Request) {
+	var allTitles []string
+	var allContent []string
+	var allcategory []int
+	var allUserId []int
+	var allTimeStamp []time.Time
+	allPosts, err := SelectInfo("posts", []string{"*"}, "")
+	if err != nil {
+		log.Fatal(err, "error retrieving all posts")
+	}
+
+	func(w http.ResponseWriter, r *http.Request) {
+		data := PostData{
+			PostTitle:    "My Post Title",
+			PostContent:  "This is the content of my post.",
+			PostCategory: "Technology",
+		}
+
+		tmpl, err := template.ParseFiles("index.html")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = tmpl.Execute(w, data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+
+	for _, mp := range allPosts {
+		for key, value := range mp {
+			if key == "title" {
+				allTitles = append(allTitles, value.(string))
+			}
+			if key == "content" {
+				allContent = append(allContent, value.(string))
+			}
+			if key == "category_id" {
+				allcategory = append(allcategory, value.(int))
+			}
+			if key == "user_id" {
+				allUserId = append(allUserId, value.(int))
+			}
+			if key == "create_at" {
+				allTimeStamp = append(allTimeStamp, value.(time.Time))
+			}
+		}
 	}
 }

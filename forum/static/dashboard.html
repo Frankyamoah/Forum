@@ -10,5 +10,70 @@
 <body>
     <h1>WELCOME</h1>
     <h1>HELLO WORLD</h1>
+     <!-- Posts Section -->
+     <div id="posts">
+        <div id="postheading">
+          <h2 >Posts</h2>
+          <!-- Filter Section -->
+          <div id="postcategories">
+            <label for="category">Category:</label>
+            <select id="category" name="category">
+              <option value="">All</option>
+              <option value="technology">Technology</option>
+              <option value="gaming">Gaming</option>
+              <option value="sports">Sports</option>
+              <option value="self-care">Self-Care</option>
+              <option value="traveling">Traveling</option>
+              <option value="food">Food</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+         <!-- Post List -->
+      <div id="postcontainer">
+        <ul id="postlist">
+          <li>
+            <h3 id="posttitle">{{.PostTitle}}</h3>
+            <p id="postcontent">{{.PostContent}}</p>
+            <p class="category">{{.PostCategory}}</p>
+            
+            <!-- Like and Dislike Section -->
+            <div id="likescontainer">
+              <button id="likeButton">Like</button>
+              <span id="likeCount">0</span>
+              <button id="dislikeButton">Dislike</button>
+              <span id="dislikeCount">0</span>
+            </div>
+
+            <!-- Comment Section -->
+            <div>
+              <h4>Comments</h4>
+              <ul>
+                <li>
+                  <p>{{.CommentContent}}</p>
+                  
+                  <!-- Like and Dislike Section -->
+                  <div id="likescontainer">
+                    <button id="likeButton">Like</button>
+                    <span id="likeCount">0</span>
+                    <button id="dislikeButton">Dislike</button>
+                    <span id="dislikeCount">0</span>
+                  </div>
+                </li>
+              </ul>
+
+             
+              <form>
+                <label for="comment">Add a comment:</label><br>
+                <textarea id="comment" name="comment"></textarea><br>
+                <input type="submit" value="Submit">
+              </form>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+        <script src="script.js"></script>
 </body>
 </html>
