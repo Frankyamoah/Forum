@@ -1,4 +1,20 @@
-package forum
+forumProject 
+            |main.go
+            forum
+                 |handlers.go
+                 |queries.go
+                 database
+                         |forumDB.sqlite
+                 static
+                        |index.html
+                        |dashboard.html
+                        |style.css
+                        |script.js
+
+
+
+
+                        package forum
 
 import (
 	"fmt"
@@ -6,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"log"
 
@@ -17,6 +34,7 @@ type PostData struct {
 	PostContent    string
 	PostCategory   string
 	UserName       string
+	Timestamp      time.Time
 	CommentContent []CommentData
 }
 type CommentData struct {
@@ -27,7 +45,8 @@ type CommentData struct {
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var allUsernames []string
 	var allPasswords []string
-	http.ServeFile(w, r, "forum/static/index.html")
+	var allEmails []string
+	var allIds []int64
 
 	if r.Method == "POST" {
 		username := r.FormValue("username")
@@ -46,7 +65,12 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 				if key == "password" {
 					allPasswords = append(allPasswords, value.(string))
 				}
-
+				if key == "email" {
+					allEmails = append(allEmails, value.(string))
+				}
+				if key == "id" {
+					allIds = append(allIds, value.(int64))
+				}
 			}
 		}
 
@@ -65,7 +89,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.NotFound(w, r)
 	}
-
 }
 
 func filterComments(postID int, allComments []map[string]interface{}) []CommentData {
@@ -103,17 +126,18 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	var allCategoryNames []string
 	var allUserNames []string
 	var allComments []string
+	var allTimeStamp []time.Time
 	postInfo, err := SelectInfo("posts", []string{"*"}, "")
 	if err != nil {
-		log.Fatal(err, "error retrieving posts data")
+		log.Fatal(err, "error retrieving all posts")
 	}
-	categoryInfo, err := SelectInfo("categories", []string{"*"}, "")
+	categoryInfo, err := SelectInfo("posts", []string{"*"}, "")
 	if err != nil {
-		log.Fatal(err, "error retrieving category data")
+		log.Fatal(err, "error retrieving all posts")
 	}
-	userInfo, err := SelectInfo("users", []string{"*"}, "")
+	userInfo, err := SelectInfo("posts", []string{"*"}, "")
 	if err != nil {
-		log.Fatal(err, "error retrieving user data")
+		log.Fatal(err, "error retrieving all posts")
 	}
 	commentsInfo, err := SelectInfo("comments", []string{"*"}, "")
 	if err != nil {
@@ -133,8 +157,6 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	//fmt.Println(allCategoryNames)
-
 	for _, mp := range userInfo {
 		for key, value := range mp {
 			if key == "username" {
@@ -142,8 +164,6 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	//fmt.Println(allUserNames)
-
 	for _, mp := range postInfo {
 		for key, value := range mp {
 			if key == "title" {
@@ -152,11 +172,13 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 			if key == "content" {
 				allContent = append(allContent, value.(string))
 			}
-
+			if key == "create_at" {
+				allTimeStamp = append(allTimeStamp, value.(time.Time))
+			}
 		}
 	}
 
-	minLength := len(allCategoryNames)
+	minLength := len(allTitles)
 	if len(allContent) < minLength {
 		minLength = len(allContent)
 	}
@@ -175,7 +197,7 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 			PostTitle:      allTitles[i],
 			PostContent:    allContent[i],
 			PostCategory:   allCategoryNames[i],
-			UserName:       allUserNames[i],
+			UserName:       "myname",
 			CommentContent: filterComments(postID, commentsInfo),
 		}
 		//fmt.Println(posts[i], "POST")
@@ -192,5 +214,9 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	// if err != nil {
+	// 	http.Error(w, "error executing template", http.StatusInternalServerError)
+	// 	return
+	// }
 
 }
