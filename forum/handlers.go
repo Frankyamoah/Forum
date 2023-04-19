@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"os"
-	"path/filepath"
 
 	"log"
 
@@ -74,6 +72,107 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// func PostHandler(w http.ResponseWriter, r *http.Request) {
+// 	wd, err := os.Getwd()
+// 	if err != nil {
+// 		fmt.Println("Error getting working directory:", err)
+// 		return
+// 	}
+
+// 	dashboardFilePath := filepath.Join(wd, "forum", "static", "dashboard.html")
+// 	file, err := os.Open(dashboardFilePath) // Change this line
+// 	if err != nil {
+// 		fmt.Println("Error opening dashboard.html:", err)
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		return
+// 	}
+// 	defer file.Close()
+
+// 	var allTitles []string
+// 	var allContent []string
+// 	var allCategoryNames []string
+// 	var allUserNames []string
+// 	var allComments []string
+// 	postInfo, err := SelectInfo("posts", []string{"*"}, "")
+// 	if err != nil {
+// 		log.Fatal(err, "error retrieving posts data")
+// 	}
+// 	categoryInfo, err := SelectInfo("categories", []string{"*"}, "")
+// 	if err != nil {
+// 		log.Fatal(err, "error retrieving category data")
+// 	}
+// 	userInfo, err := SelectInfo("users", []string{"*"}, "")
+// 	if err != nil {
+// 		log.Fatal(err, "error retrieving user data")
+// 	}
+// 	commentsInfo, err := SelectInfo("comments", []string{"*"}, "")
+// 	if err != nil {
+// 		log.Fatal(err, "error retrieving comment data")
+// 	}
+// 	for _, mp := range commentsInfo {
+// 		for key, value := range mp {
+// 			if key == "content" {
+// 				allComments = append(allComments, value.(string))
+// 			}
+// 		}
+// 	}
+// 	for _, mp := range categoryInfo {
+// 		for key, value := range mp {
+// 			if key == "name" {
+// 				allCategoryNames = append(allCategoryNames, value.(string))
+// 			}
+// 		}
+// 	}
+// 	//fmt.Println(allCategoryNames)
+
+// 	for _, mp := range userInfo {
+// 		for key, value := range mp {
+// 			if key == "username" {
+// 				allUserNames = append(allUserNames, value.(string))
+// 			}
+// 		}
+// 	}
+// 	//fmt.Println(allUserNames)
+
+// 	for _, mp := range postInfo {
+// 		for key, value := range mp {
+// 			if key == "title" {
+// 				allTitles = append(allTitles, value.(string))
+// 			}
+// 			if key == "content" {
+// 				allContent = append(allContent, value.(string))
+// 			}
+
+// 		}
+// 	}
+
+// 	posts := make([]PostData, len(postInfo))
+
+// 	for i := 0; i < len(postInfo); i++ {
+// 		postID := int(postInfo[i]["id"].(int64))
+// 		posts[i] = PostData{
+// 			PostTitle:      allTitles[i],
+// 			PostContent:    allContent[i],
+// 			PostCategory:   allCategoryNames[i],
+// 			UserName:       allUserNames[i],
+// 			CommentContent: filterComments(postID, commentsInfo),
+// 		}
+// 		//fmt.Println(posts[i], "POST")
+// 	}
+
+// 	tmpl, err := template.ParseFiles(dashboardFilePath)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+
+// 	err = tmpl.ExecuteTemplate(w, "post.html", map[string]interface{}{
+// 		"Posts": posts,
+// 	})
+// 	if err != nil {
+// 		return
+// 	}
+
+// }
 func filterComments(postID int, allComments []map[string]interface{}) []CommentData {
 	var comments []CommentData
 	for _, comment := range allComments {
@@ -86,117 +185,20 @@ func filterComments(postID int, allComments []map[string]interface{}) []CommentD
 	}
 	return comments
 }
-
 func PostHandler(w http.ResponseWriter, r *http.Request) {
-	wd, err := os.Getwd()
+
+	posts := populatePost()
+	//	fmt.Println(posts)
+
+	tmpl, err := template.ParseFiles("forum/static/dashboard.html")
 	if err != nil {
-		fmt.Println("Error getting working directory:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	dashboardFilePath := filepath.Join(wd, "forum", "static", "dashboard.html")
-	postFilePath := filepath.Join(wd, "forum", "static", "post.html")
-	file, err := os.Open(dashboardFilePath) // Change this line
+	err = tmpl.Execute(w, posts)
 	if err != nil {
-		fmt.Println("Error opening dashboard.html:", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer file.Close()
-
-	var allTitles []string
-	var allContent []string
-	var allCategoryNames []string
-	var allUserNames []string
-	var allComments []string
-	postInfo, err := SelectInfo("posts", []string{"*"}, "")
-	if err != nil {
-		log.Fatal(err, "error retrieving posts data")
-	}
-	categoryInfo, err := SelectInfo("categories", []string{"*"}, "")
-	if err != nil {
-		log.Fatal(err, "error retrieving category data")
-	}
-	userInfo, err := SelectInfo("users", []string{"*"}, "")
-	if err != nil {
-		log.Fatal(err, "error retrieving user data")
-	}
-	commentsInfo, err := SelectInfo("comments", []string{"*"}, "")
-	if err != nil {
-		log.Fatal(err, "error retrieving comment data")
-	}
-	for _, mp := range commentsInfo {
-		for key, value := range mp {
-			if key == "content" {
-				allComments = append(allComments, value.(string))
-			}
-		}
-	}
-	for _, mp := range categoryInfo {
-		for key, value := range mp {
-			if key == "name" {
-				allCategoryNames = append(allCategoryNames, value.(string))
-			}
-		}
-	}
-	//fmt.Println(allCategoryNames)
-
-	for _, mp := range userInfo {
-		for key, value := range mp {
-			if key == "username" {
-				allUserNames = append(allUserNames, value.(string))
-			}
-		}
-	}
-	//fmt.Println(allUserNames)
-
-	for _, mp := range postInfo {
-		for key, value := range mp {
-			if key == "title" {
-				allTitles = append(allTitles, value.(string))
-			}
-			if key == "content" {
-				allContent = append(allContent, value.(string))
-			}
-
-		}
-	}
-
-	minLength := len(allCategoryNames)
-	if len(allContent) < minLength {
-		minLength = len(allContent)
-	}
-	if len(allCategoryNames) < minLength {
-		minLength = len(allCategoryNames)
-	}
-	if len(allComments) < minLength {
-		minLength = len(allComments)
-	}
-
-	posts := make([]PostData, minLength)
-
-	for i := 0; i < minLength; i++ {
-		postID := int(postInfo[i]["id"].(int64))
-		posts[i] = PostData{
-			PostTitle:      allTitles[i],
-			PostContent:    allContent[i],
-			PostCategory:   allCategoryNames[i],
-			UserName:       allUserNames[i],
-			CommentContent: filterComments(postID, commentsInfo),
-		}
-		//fmt.Println(posts[i], "POST")
-	}
-
-	tmpl, err := template.ParseFiles(dashboardFilePath, postFilePath)
-	if err != nil {
-		panic(err)
-	}
-
-	err = tmpl.ExecuteTemplate(w, "dashboard.html", map[string]interface{}{
-		"Posts": posts,
-	})
-	if err != nil {
-		return
-	}
-
 }

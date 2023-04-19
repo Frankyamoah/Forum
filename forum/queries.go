@@ -10,7 +10,7 @@ import (
 )
 
 func InsertInfo(table string, colm []string, values []interface{}) error {
-	dataBase, err := sql.Open("sqlite3", "database/forumDB.sqlite")
+	dataBase, err := sql.Open("sqlite3", "/Users/sumsum/Coding/01Projects/forumProject/forum/database/forumDB.sqlite")
 	if err != nil {
 		log.Fatal(err, "Error opening database")
 	}
@@ -32,7 +32,7 @@ func InsertInfo(table string, colm []string, values []interface{}) error {
 
 func SelectInfo(table string, columns []string, condition string) ([]map[string]interface{}, error) {
 	// Open a connection to the SQL database
-	database, err := sql.Open("sqlite3", "forum/database/forumDB.sqlite")
+	database, err := sql.Open("sqlite3", "/Users/sumsum/Coding/01Projects/forumProject/forum/database/forumDB.sqlite")
 	if err != nil {
 		log.Fatal(err, "Error opening database")
 	}
@@ -95,7 +95,7 @@ func SelectInfo(table string, columns []string, condition string) ([]map[string]
 
 func updateOrDeleteInfo(table string, operation string, columns []string, values []interface{}, condition string) (int64, error) {
 	// Open a connection to the SQLite database
-	db, err := sql.Open("sqlite3", "database/forumDB.sqlite")
+	db, err := sql.Open("sqlite3", "/Users/sumsum/Coding/01Projects/forumProject/forum/database/forumDB.sqlite")
 	if err != nil {
 		log.Fatal(err, "Error opening database")
 	}

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <h1>this one?</h1>
 <button id="newpost">Create Post</button>
      <!-- Posts Section -->
      <div id="posts">
@@ -32,14 +33,50 @@
          <!-- Post List -->
       <div id="postcontainer">
 
-        <ul id="postlist">
+       
             <ul id="postlist">
-                {{range .Posts}}
-                    {{template "post.html" .}}
+               {{range .}}
+                <li>
+                    <h3 id="posttitle">{{.PostTitle}}</h3>
+                    <h4 id="postedby">By: {{.UserId}}</h4>
+                    <p class="category">{{.PostCategory}}</p>
+                    <p id="postcontent">{{.PostContent}}</p>
+                    
+                    <!-- Like and Dislike Section -->
+                    <div class="likescontainer">
+                        <button class="likeButton">Like</button>
+                        <span class="likeCount">0</span>
+                        <button class="dislikeButton">Dislike</button>
+                        <span class="dislikeCount">0</span>
+                    </div>
+                    <!-- Comment Section -->
+                    <div>
+                        <h4>Comments</h4>
+                        <ul>
+                            <li>
+                         
+                
+                                <!-- Like and Dislike Section -->
+                                <div class="likescontainer">
+                                    <button class="likeButton">Like</button>
+                                    <span class="likeCount">0</span>
+                                    <button class="dislikeButton">Dislike</button>
+                                    <span class="dislikeCount">0</span>
+                                </div>
+                            </li>
+                        </ul>
+                
+                        <form>
+                            <label for="comment">Add a comment:</label><br>
+                            <textarea id="comment" name="comment"></textarea><br>
+                            <input type="submit" value="Submit">
+                        </form>
+                    </div>
+                </li>
                 {{end}}
+                
             </ul>
-            
-        </ul>
+
       
       
       </div>

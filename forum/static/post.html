@@ -1,28 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Posts</title>
-</head>
+{{define "postdisplayed"}}
 <body>
     <!-- post.html -->
+    {{range "Posts"}}
+    <h1>which page?</h1>
 
 <li>
     <h3 id="posttitle">{{.PostTitle}}</h3>
     <h4 id="postedby">By: {{.UserName}}</h4>
     <p class="category">{{.PostCategory}}</p>
     <p id="postcontent">{{.PostContent}}</p>
-   
+    
     <!-- Like and Dislike Section -->
-    <div id="likescontainer">
-        <button id="likeButton">Like</button>
-        <span id="likeCount">0</span>
-        <button id="dislikeButton">Dislike</button>
-        <span id="dislikeCount">0</span>
+    <div class="likescontainer">
+        <button class="likeButton">Like</button>
+        <span class="likeCount">0</span>
+        <button class="dislikeButton">Dislike</button>
+        <span class="dislikeCount">0</span>
     </div>
-
+{{end}}
     <!-- Comment Section -->
     <div>
         <h4>Comments</h4>
@@ -31,11 +26,11 @@
                 <p>{{.CommentContent}}</p>
 
                 <!-- Like and Dislike Section -->
-                <div id="likescontainer">
-                    <button id="likeButton">Like</button>
-                    <span id="likeCount">0</span>
-                    <button id="dislikeButton">Dislike</button>
-                    <span id="dislikeCount">0</span>
+                <div class="likescontainer">
+                    <button class="likeButton">Like</button>
+                    <span class="likeCount">0</span>
+                    <button class="dislikeButton">Dislike</button>
+                    <span class="dislikeCount">0</span>
                 </div>
             </li>
         </ul>
@@ -49,4 +44,4 @@
 </li>
 
 </body>
-</html>
+{{end}}
