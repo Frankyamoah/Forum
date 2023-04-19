@@ -27,11 +27,15 @@ type CommentData struct {
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var allUsernames []string
 	var allPasswords []string
-	http.ServeFile(w, r, "forum/static/index.html")
 
 	if r.Method == "POST" {
 		username := r.FormValue("username")
 		password := r.FormValue("password")
+
+		if username == "" || password == "" {
+			fmt.Fprintf(w, "Please enter a username and password")
+			return
+		}
 
 		allUserInfo, err := SelectInfo("users", []string{"*"}, "")
 		if err != nil {
@@ -51,6 +55,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var loggedIn bool
+
 		for i, u := range allUsernames {
 			if username == u && password == allPasswords[i] {
 				fmt.Println("username and password correct")
@@ -62,10 +67,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		if !loggedIn {
 			fmt.Fprintf(w, "Invalid username or password")
 		}
+	} else if r.Method == "GET" {
+		http.ServeFile(w, r, "forum/static/index.html")
 	} else {
 		http.NotFound(w, r)
 	}
-
 }
 
 func filterComments(postID int, allComments []map[string]interface{}) []CommentData {
