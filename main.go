@@ -1,26 +1,38 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
-	"forumProject/forum"
 	"net/http"
+	"text/template"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "forum/static/index.html")
+var db *sql.DB
+var tpl *template.Template
+
+func init() {
+	var err error
+	db, err = sql.Open("sqlite3", "forum.db")
+	if err != nil {
+		panic(err)
+	}
+
+	tpl = template.Must(template.ParseGlob("templates/*.html"))
 }
 
 func main() {
+	http.HandleFunc("/", index)
+	http.HandleFunc("/login", login)
+	http.HandleFunc("/register", register)
+	http.HandleFunc("/logout", logout)
+	http.HandleFunc("/newpost", newPost)
+	http.HandleFunc("/viewpost", viewPost)
 
-	path := "forum/static/"
-	fs := http.FileServer(http.Dir(path))
-	http.Handle("/forum/static/", http.StripPrefix("/forum/static/", fs))
+	staticFileServer := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static", staticFileServer))
 
-	http.HandleFunc("/", forum.LoginHandler)
-
-	http.HandleFunc("/forum/static/dashboard.html", forum.PostHandler)
-	// http.HandleFunc("/post", forum.Handler)
-
-	fmt.Println("Server listening on port 8080...")
+	fmt.Println("Listening on :8080...")
 	http.ListenAndServe(":8080", nil)
 }
