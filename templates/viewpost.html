@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Post</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>{{.Post.Title}}</h1>
+    <p>By {{.Post.Author.Username}} on {{.Post.CreatedAt}}</p>
+    <div>{{.Post.Content}}</div>
+    <br>
+<div class="comments">
+    <h3>Comments:</h3>
+    {{range .Comments}}
+      <div class="comment">
+        <p>{{.Content}}</p>
+        <p><em>By {{.Author.Username}} on {{.CreatedAt.Format "2006-01-02 15:04:05"}}</em></p>
+      </div>
+    {{else}}
+      <p>No comments yet.</p>
+    {{end}}
+  </div>
+  <!-- Add comment form -->
+<div class="add-comment">
+  <h3>Add a comment:</h3>
+  <form action="/addcomment" method="POST">
+      <input type="hidden" name="post_id" value="{{.Post.ID}}">
+      <textarea name="content" rows="5" cols="50" required></textarea><br>
+      <label for="category">Category:</label>
+      <select name="category" required>
+          <option value="gaming">Gaming</option>
+          <option value="technology">Technology</option>
+          <option value="lifestyle">Lifestyle</option>
+          <option value="travel">Travel</option>
+          <option value="cooking">Cooking</option>
+          <option value="other">Other</option>
+      </select>
+      <input type="submit" value="Submit">
+  </form>
+</div>
+
+  
+    <p><a href="/">Back to the forum</a></p>
+    
+</body>
+</html>

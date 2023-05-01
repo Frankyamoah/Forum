@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forum</title>    
+    <link rel="stylesheet" href="/static/style.css">
+
+</head>
+<body>
+    <div id="loginandregister">
+    {{if .Username}}
+    <p class="welcome">Welcome, {{.Username}}! <a class="logoutbtn" href="/logout">Logout</a></p>
+    {{else}}
+    
+        <p><a class="loginbtn" href="/login">Login</a>  <a class="registerbtn" href="/register">Register</a></p>
+    </div>
+    {{end}}
+
+    {{if .Username}}
+    <a class="newpostbtn" href="/newpost">Create a new post</a>
+    {{end}}
+  <div id="postcontainer">
+      
+    <h1>Posts</h1>
+    <ol>
+      <div>
+        <h3>Filter by category:</h3>
+        <form method="get" action="/">
+            <select name="category">
+                <option value="">-- Select a category --</option>
+                <option value="gaming">Gaming</option>
+                <option value="technology">Technology</option>
+                <option value="lifestyle">Lifestyle</option>
+                <option value="travel">Travel</option>
+                <option value="cooking">Cooking</option>
+                <option value="other">Other</option>
+            </select>
+            <input type="submit" value="Filter">
+            <a href="/">Clear filter</a>
+        </form>
+    </div>
+       
+        {{range .Posts}}
+        <li><a href="/viewpost?id={{.ID}}">{{.Title}}</a> by {{.Author.Username}}</li>
+        {{end}}
+    </ol>
+
+  </div>
+  
+</body>
+</html>
