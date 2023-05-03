@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"errors"
 	"log"
 	"time"
@@ -20,6 +21,8 @@ type Post struct {
 	CreatedAt time.Time
 	Author    User
 	Category  string
+	Likes     int
+	Dislikes  int
 }
 
 type Comment struct {
@@ -28,12 +31,14 @@ type Comment struct {
 	CreatedAt time.Time
 	Author    User
 	PostID    int
+	Likes     int
+	Dislikes  int
 }
 
 func getAllPosts() []Post {
 	rows, err := db.Query(`SELECT p.id, p.title, p.content, p.created_at, u.id, u.username, p.category
-	FROM posts p JOIN users u ON p.author_id = u.id
-	ORDER BY p.created_at DESC`)
+		FROM posts p JOIN users u ON p.author_id = u.id
+		ORDER BY p.created_at DESC`)
 	if err != nil {
 		panic(err)
 	}
@@ -93,8 +98,8 @@ func createPost(userID int, title, content, category string) error {
 
 func getPost(postID string) (Post, error) {
 	row := db.QueryRow(`SELECT p.id, p.title, p.content, p.created_at, u.id, u.username
-		FROM posts p JOIN users u ON p.author_id = u.id
-		WHERE p.id = ?`, postID)
+			FROM posts p JOIN users u ON p.author_id = u.id
+			WHERE p.id = ?`, postID)
 
 	var p Post
 	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username)
@@ -112,9 +117,9 @@ func createComment(userID, postID int, content string) error {
 
 func getPostComments(postID int) ([]Comment, error) {
 	rows, err := db.Query(`SELECT c.id, c.content, c.created_at, u.id, u.username, c.post_id
-		FROM comments c JOIN users u ON c.author_id = u.id
-		WHERE c.post_id = ?
-		ORDER BY c.created_at DESC`, postID)
+			FROM comments c JOIN users u ON c.author_id = u.id
+			WHERE c.post_id = ?
+			ORDER BY c.created_at DESC`, postID)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +140,9 @@ func getPostComments(postID int) ([]Comment, error) {
 
 func getPostsByCategory(category string) []Post {
 	rows, err := db.Query(`SELECT p.id, p.title, p.content, p.created_at, u.id, u.username, p.category
-        FROM posts p JOIN users u ON p.author_id = u.id
-        WHERE p.category = ?
-        ORDER BY p.created_at DESC`, category)
+			FROM posts p JOIN users u ON p.author_id = u.id
+			WHERE p.category = ?
+			ORDER BY p.created_at DESC`, category)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -155,4 +160,71 @@ func getPostsByCategory(category string) []Post {
 		log.Fatal(err)
 	}
 	return posts
+}
+func likePost(userID, postID int) error {
+	_, err := db.Exec("INSERT INTO post_likes (user_id, post_id, liked) VALUES (?, ?, ?) ON CONFLICT (user_id, post_id) DO UPDATE SET liked=EXCLUDED.liked", userID, postID, true)
+	if err != nil {
+		log.Printf("Error inserting like: %v", err)
+		return err
+	}
+	return nil
+}
+
+func dislikePost(userID, postID int) error {
+	_, err := db.Exec("INSERT INTO post_likes (user_id, post_id, liked) VALUES (?, ?, ?) ON CONFLICT (user_id, post_id) DO UPDATE SET liked=EXCLUDED.liked", userID, postID, false)
+	if err != nil {
+		log.Printf("Error inserting dislike: %v", err)
+		return err
+	}
+	return nil
+}
+
+func likeComment(userID, commentID int) error {
+	_, err := db.Exec("INSERT INTO comment_likes (user_id, comment_id, liked) VALUES (?, ?), ?", userID, commentID)
+	if err != nil {
+		log.Printf("Error inserting like: %v", err)
+
+	}
+	return err
+}
+
+func dislikeComment(userID, commentID int) error {
+	_, err := db.Exec("DELETE FROM comment_likes WHERE user_id = ? AND comment_id = ?", userID, commentID)
+	if err != nil {
+		log.Printf("Error inserting like: %v", err)
+
+	}
+	return err
+}
+
+func GetLikeCount(id int, contentType string) int {
+	var count int
+	if contentType == "post" {
+		err := db.QueryRow("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND liked = 1", id).Scan(&count)
+		if err != nil && err != sql.ErrNoRows {
+			log.Printf("Error fetching like count for post %d: %v", id, err)
+		}
+	} else if contentType == "comment" {
+		err := db.QueryRow("SELECT COUNT(*) FROM comment_likes WHERE comment_id = ? AND liked = 1", id).Scan(&count)
+		if err != nil && err != sql.ErrNoRows {
+			log.Printf("Error fetching like count for comment %d: %v", id, err)
+		}
+	}
+	return count
+}
+
+func GetDislikeCount(id int, contentType string) int {
+	var count int
+	if contentType == "post" {
+		err := db.QueryRow("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND liked = 0", id).Scan(&count)
+		if err != nil && err != sql.ErrNoRows {
+			log.Printf("Error fetching dislike count for post %d: %v", id, err)
+		}
+	} else if contentType == "comment" {
+		err := db.QueryRow("SELECT COUNT(*) FROM comment_likes WHERE comment_id = ? AND liked = 0", id).Scan(&count)
+		if err != nil && err != sql.ErrNoRows {
+			log.Printf("Error fetching dislike count for comment %d: %v", id, err)
+		}
+	}
+	return count
 }

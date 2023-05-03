@@ -41,9 +41,26 @@
         </form>
     </div>
        
-        {{range .Posts}}
-        <li><a href="/viewpost?id={{.ID}}">{{.Title}}</a> by {{.Author.Username}}</li>
-        {{end}}
+    {{range .Posts}}
+    <li>
+      <a href="/viewpost?id={{.ID}}">{{.Title}}</a> by {{.Author.Username}}
+      <form class="inline-form" action="/like" method="POST">
+        <input type="hidden" name="post_id" value="{{.ID}}">
+        <input type="submit" value="Like">
+      </form>
+      <form class="inline-form" action="/dislike" method="POST">
+        <input type="hidden" name="post_id" value="{{.ID}}">
+        <input type="submit" value="Dislike">
+      </form>
+      {{ $likes := GetLikeCount .ID "post" }}
+      {{ $dislikes := GetDislikeCount .ID "post" }}
+      {{ $total := sub $likes $dislikes }}
+      {{if eq $total 0}}0{{else}}{{$total}}{{end}} Likes |
+      {{if eq $total 0}}0{{else}}{{$dislikes}}{{end}} Dislikes
+      
+    </li>
+{{end}}
+
     </ol>
 
   </div>

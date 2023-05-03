@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -33,6 +32,12 @@ func index(w http.ResponseWriter, r *http.Request) {
 	} else {
 		posts = getPostsByCategory(categoryFilter)
 	}
+
+	for _, post := range posts {
+		post.Likes = GetLikeCount(post.ID, "post")
+		post.Dislikes = GetDislikeCount(post.ID, "post")
+	}
+
 	data := struct {
 		Username string
 		Posts    []Post
@@ -172,6 +177,11 @@ func viewPost(w http.ResponseWriter, r *http.Request) {
 	session.Values["last_activity"] = time.Now().Unix()
 	session.Save(r, w)
 
+	for _, comment := range comments {
+		comment.Likes = GetLikeCount(comment.ID, "comment")
+		comment.Dislikes = GetDislikeCount(comment.ID, "comment")
+	}
+
 	data := struct {
 		Post     Post
 		Comments []Comment
@@ -181,7 +191,7 @@ func viewPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// // Add this print statement to see if the function is being executed and check the data
-	fmt.Printf("ViewPost function called. Post: %+v, Comments: %+v\n", post, comments)
+	//fmt.Printf("ViewPost function called. Post: %+v, Comments: %+v\n", post, comments)
 
 	err = tpl.ExecuteTemplate(w, "viewpost.html", data)
 	if err != nil {
@@ -233,4 +243,68 @@ func addComment(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect back to the post page
 	http.Redirect(w, r, "/viewpost?id="+strconv.Itoa(postID), http.StatusSeeOther)
+}
+
+func like(w http.ResponseWriter, r *http.Request) {
+	//log.Printf("Like/Dislike called, request: %+v\n", r)
+
+	handleLikeOrDislike(w, r, true)
+}
+
+func dislike(w http.ResponseWriter, r *http.Request) {
+	//log.Printf("Like/Dislike called, request: %+v\n", r)
+
+	handleLikeOrDislike(w, r, false)
+}
+
+func handleLikeOrDislike(w http.ResponseWriter, r *http.Request, isLike bool) {
+	session, err := store.Get(r, "forum-session")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	userID, loggedIn := session.Values["user_id"].(int)
+	if !loggedIn {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	postID, err := strconv.Atoi(r.FormValue("post_id"))
+	isPost := err == nil
+
+	var id int
+	if isPost {
+		id = postID
+	} else {
+		id, err = strconv.Atoi(r.FormValue("comment_id"))
+		if err != nil {
+			http.Error(w, "Invalid post or comment ID", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if isLike {
+		if isPost {
+			err = likePost(userID, id)
+		} else {
+			err = likeComment(userID, id)
+		}
+	} else {
+		if isPost {
+			err = dislikePost(userID, id)
+		} else {
+			err = dislikeComment(userID, id)
+		}
+	}
+
+	if err != nil {
+		http.Error(w, "Error processing like or dislike", http.StatusInternalServerError)
+		return
+	}
+
+	redirectPath := "/"
+	if !isPost {
+		redirectPath = "/viewpost?id=" + r.FormValue("post_id")
+	}
+	http.Redirect(w, r, redirectPath, http.StatusSeeOther)
 }

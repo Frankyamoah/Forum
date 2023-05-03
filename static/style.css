@@ -87,3 +87,19 @@
     text-align: center;
     list-style: none;
 }
+
+.inline-form {
+    display: inline;
+  }
+  
+  .inline-form input[type="submit"] {
+    background: none;
+    border: none;
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0;
+  }
+  
