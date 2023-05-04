@@ -53,10 +53,10 @@
         <input type="submit" value="Dislike">
       </form>
       {{ $likes := GetLikeCount .ID "post" }}
-      {{ $dislikes := GetDislikeCount .ID "post" }}
-      {{ $total := sub $likes $dislikes }}
-      {{if eq $total 0}}0{{else}}{{$total}}{{end}} Likes |
-      {{if eq $total 0}}0{{else}}{{$dislikes}}{{end}} Dislikes
+{{ $dislikes := GetDislikeCount .ID "post" }}
+{{if eq $likes 0}}0{{else}}{{$likes}}{{end}} Likes |
+{{if eq $dislikes 0}}0{{else}}{{$dislikes}}{{end}} Dislikes
+
       
     </li>
 {{end}}

@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"math"
 	"net/http"
 	"text/template"
 
@@ -23,8 +22,6 @@ func init() {
 	tpl = template.New("").Funcs(template.FuncMap{
 		"GetLikeCount":    GetLikeCount,
 		"GetDislikeCount": GetDislikeCount,
-		"sub":             func(a, b int) int { return a - b },
-		"abs":             func(a int) int { return int(math.Abs(float64(a))) },
 	})
 
 	tpl, err = tpl.ParseGlob("templates/*.html")

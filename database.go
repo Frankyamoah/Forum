@@ -5,8 +5,6 @@ import (
 	"errors"
 	"log"
 	"time"
-
-	"github.com/gorilla/sessions"
 )
 
 type User struct {
@@ -76,8 +74,8 @@ func registerUser(username, password string) error {
 	return err
 }
 
-func getUsernameFromSession(session *sessions.Session) string {
-	userID, loggedIn := session.Values["user_id"].(int)
+func getUsernameFromSession(session map[string]interface{}) string {
+	userID, loggedIn := session["user_id"].(int)
 	if !loggedIn {
 		return ""
 	}
@@ -161,40 +159,40 @@ func getPostsByCategory(category string) []Post {
 	}
 	return posts
 }
-func likePost(userID, postID int) error {
-	_, err := db.Exec("INSERT INTO post_likes (user_id, post_id, liked) VALUES (?, ?, ?) ON CONFLICT (user_id, post_id) DO UPDATE SET liked=EXCLUDED.liked", userID, postID, true)
+func toggleLikePost(userID, postID int) error {
+	_, err := db.Exec(`INSERT INTO post_likes (user_id, post_id, liked, disliked) VALUES (?, ?, true, false) ON CONFLICT (user_id, post_id) DO UPDATE SET liked = NOT post_likes.liked, disliked = false`, userID, postID)
 	if err != nil {
-		log.Printf("Error inserting like: %v", err)
+		log.Printf("Error toggling like: %v", err)
 		return err
 	}
 	return nil
 }
 
-func dislikePost(userID, postID int) error {
-	_, err := db.Exec("INSERT INTO post_likes (user_id, post_id, liked) VALUES (?, ?, ?) ON CONFLICT (user_id, post_id) DO UPDATE SET liked=EXCLUDED.liked", userID, postID, false)
+func toggleDislikePost(userID, postID int) error {
+	_, err := db.Exec(`INSERT INTO post_likes (user_id, post_id, liked, disliked) VALUES (?, ?, false, true) ON CONFLICT (user_id, post_id) DO UPDATE SET disliked = NOT post_likes.disliked, liked = false`, userID, postID)
 	if err != nil {
-		log.Printf("Error inserting dislike: %v", err)
+		log.Printf("Error toggling dislike: %v", err)
 		return err
 	}
 	return nil
 }
 
-func likeComment(userID, commentID int) error {
-	_, err := db.Exec("INSERT INTO comment_likes (user_id, comment_id, liked) VALUES (?, ?), ?", userID, commentID)
+func toggleLikeComment(userID, postID int) error {
+	_, err := db.Exec(`INSERT INTO comment_likes (user_id, comment_id, liked, disliked) VALUES (?, ?, true, false) ON CONFLICT (user_id, comment_id) DO UPDATE SET liked = NOT comment_likes.liked, disliked = false`, userID, postID)
 	if err != nil {
-		log.Printf("Error inserting like: %v", err)
-
+		log.Printf("Error toggling like: %v", err)
+		return err
 	}
-	return err
+	return nil
 }
 
-func dislikeComment(userID, commentID int) error {
-	_, err := db.Exec("DELETE FROM comment_likes WHERE user_id = ? AND comment_id = ?", userID, commentID)
+func toggleDislikeComment(userID, postID int) error {
+	_, err := db.Exec(`INSERT INTO comment_likes (user_id, comment_id, liked, disliked) VALUES (?, ?, false, true) ON CONFLICT (user_id, comment_id) DO UPDATE SET disliked = NOT comment_likes.disliked, liked = false`, userID, postID)
 	if err != nil {
-		log.Printf("Error inserting like: %v", err)
-
+		log.Printf("Error toggling dislike: %v", err)
+		return err
 	}
-	return err
+	return nil
 }
 
 func GetLikeCount(id int, contentType string) int {
@@ -216,12 +214,12 @@ func GetLikeCount(id int, contentType string) int {
 func GetDislikeCount(id int, contentType string) int {
 	var count int
 	if contentType == "post" {
-		err := db.QueryRow("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND liked = 0", id).Scan(&count)
+		err := db.QueryRow("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND disliked = 1", id).Scan(&count)
 		if err != nil && err != sql.ErrNoRows {
 			log.Printf("Error fetching dislike count for post %d: %v", id, err)
 		}
 	} else if contentType == "comment" {
-		err := db.QueryRow("SELECT COUNT(*) FROM comment_likes WHERE comment_id = ? AND liked = 0", id).Scan(&count)
+		err := db.QueryRow("SELECT COUNT(*) FROM comment_likes WHERE comment_id = ? AND disliked = 1", id).Scan(&count)
 		if err != nil && err != sql.ErrNoRows {
 			log.Printf("Error fetching dislike count for comment %d: %v", id, err)
 		}

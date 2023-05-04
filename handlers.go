@@ -6,24 +6,45 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gorilla/sessions"
+	"github.com/gorilla/securecookie"
 )
 
-var store = sessions.NewCookieStore([]byte("ForumProject"))
+var (
+	hashKey  = securecookie.GenerateRandomKey(64)
+	blockKey = securecookie.GenerateRandomKey(32)
+
+	store = securecookie.New(hashKey, blockKey)
+)
+
+//var store = sessions.NewCookieStore([]byte("ForumProject"))
 
 // index handles the forum's main page.
 func index(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, "forum-session")
-	if err != nil {
-		log.Fatal(err)
+	session := make(map[string]interface{})
+	if cookie, err := r.Cookie("forum-session"); err == nil {
+		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+			log.Printf("Error decoding session: %v", err)
+		}
 	}
 
 	// set the session's max age to 2 minutes
-	session.Options.MaxAge = 60 // in seconds
+	//session.Options.MaxAge = 60 // in seconds
 
 	// update the session's last activity time
-	session.Values["last_activity"] = time.Now().Unix()
-	session.Save(r, w)
+	session["last_activity"] = time.Now().Unix()
+	encodedSession, err := store.Encode("forum-session", session)
+	if err != nil {
+		log.Printf("Error encoding session: %v", err)
+	} else {
+		cookie := &http.Cookie{
+			Name:     "forum-session",
+			Value:    encodedSession,
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   60 * 60, // 1 min, equivalent to session.Options.MaxAge
+		}
+		http.SetCookie(w, cookie)
+	}
 
 	categoryFilter := r.URL.Query().Get("category")
 	var posts []Post
@@ -57,18 +78,32 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 		userID, err := authenticateUser(username, password)
 		if err == nil {
-			session, err := store.Get(r, "forum-session")
-			if err != nil {
-				log.Fatal(err)
+			session := make(map[string]interface{})
+			if cookie, err := r.Cookie("forum-session"); err == nil {
+				if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+					log.Printf("Error decoding session: %v", err)
+				}
 			}
 
 			// set the session's max age to 2 minutes
-			session.Options.MaxAge = 60 * 60 // in seconds
+			// session.Options.MaxAge = 60 * 60 // in seconds
 
 			// update the session's last activity time
-			session.Values["last_activity"] = time.Now().Unix()
-			session.Values["user_id"] = userID
-			session.Save(r, w)
+			session["last_activity"] = time.Now().Unix()
+			session["user_id"] = userID
+			encodedSession, err := store.Encode("forum-session", session)
+			if err != nil {
+				log.Printf("Error encoding session: %v", err)
+			} else {
+				cookie := &http.Cookie{
+					Name:     "forum-session",
+					Value:    encodedSession,
+					Path:     "/",
+					HttpOnly: true,
+					MaxAge:   60 * 60, // 1 hour, equivalent to session.Options.MaxAge
+				}
+				http.SetCookie(w, cookie)
+			}
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
@@ -85,17 +120,31 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 		err := registerUser(username, password)
 		if err == nil {
-			session, err := store.Get(r, "forum-session")
-			if err != nil {
-				log.Fatal(err)
+			session := make(map[string]interface{})
+			if cookie, err := r.Cookie("forum-session"); err == nil {
+				if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+					log.Printf("Error decoding session: %v", err)
+				}
 			}
 
 			// set the session's max age to 2 minutes
-			session.Options.MaxAge = 60 * 60 // in seconds
+			// session.Options.MaxAge = 60 * 60 // in seconds
 
 			// update the session's last activity time
-			session.Values["last_activity"] = time.Now().Unix()
-			session.Save(r, w)
+			session["last_activity"] = time.Now().Unix()
+			encodedSession, err := store.Encode("forum-session", session)
+			if err != nil {
+				log.Printf("Error encoding session: %v", err)
+			} else {
+				cookie := &http.Cookie{
+					Name:     "forum-session",
+					Value:    encodedSession,
+					Path:     "/",
+					HttpOnly: true,
+					MaxAge:   60 * 60, // 1 hour, equivalent to session.Options.MaxAge
+				}
+				http.SetCookie(w, cookie)
+			}
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
@@ -106,36 +155,53 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 // logout handles user logout.
 func logout(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, "forum-session")
-	if err != nil {
-		log.Fatal(err)
+	session := make(map[string]interface{})
+	if cookie, err := r.Cookie("forum-session"); err == nil {
+		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+			log.Printf("Error decoding session: %v", err)
+		}
 	}
 
 	// set the session's max age to 2 minutes
-	session.Options.MaxAge = 60 * 60 // in seconds
+	// session.Options.MaxAge = 60 * 60 // in seconds
 
 	// update the session's last activity time
-	session.Values["last_activity"] = time.Now().Unix()
+	session["last_activity"] = time.Now().Unix()
 
-	delete(session.Values, "user_id")
-	session.Save(r, w)
+	delete(session, "user_id")
+
+	encodedSession, err := store.Encode("forum-session", session)
+	if err != nil {
+		log.Printf("Error encoding session: %v", err)
+	} else {
+		cookie := &http.Cookie{
+			Name:     "forum-session",
+			Value:    encodedSession,
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   60 * 60, // 1 hour, equivalent to session.Options.MaxAge
+		}
+		http.SetCookie(w, cookie)
+	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // newPost handles creating a new forum post.
 func newPost(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, "forum-session")
-	if err != nil {
-		log.Fatal(err)
+	session := make(map[string]interface{})
+	if cookie, err := r.Cookie("forum-session"); err == nil {
+		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+			log.Printf("Error decoding session: %v", err)
+		}
 	}
 
 	// set the session's max age to 2 minutes
-	session.Options.MaxAge = 60 * 60 // in seconds
+	// session.Options.MaxAge = 60 * 60 // in seconds
 
 	// update the session's last activity time
-	session.Values["last_activity"] = time.Now().Unix()
+	session["last_activity"] = time.Now().Unix()
 
-	userID, loggedIn := session.Values["user_id"].(int)
+	userID, loggedIn := session["user_id"].(int)
 	if !loggedIn {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -168,14 +234,28 @@ func viewPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := store.Get(r, "forum-session")
-	if err != nil {
-		log.Fatal(err)
+	session := make(map[string]interface{})
+	if cookie, err := r.Cookie("forum-session"); err == nil {
+		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+			log.Printf("Error decoding session: %v", err)
+		}
 	}
 
-	session.Options.MaxAge = 60 * 60 // in seconds
-	session.Values["last_activity"] = time.Now().Unix()
-	session.Save(r, w)
+	// session.Options.MaxAge = 60 * 60 // in seconds
+	session["last_activity"] = time.Now().Unix()
+	encodedSession, err := store.Encode("forum-session", session)
+	if err != nil {
+		log.Printf("Error encoding session: %v", err)
+	} else {
+		cookie := &http.Cookie{
+			Name:     "forum-session",
+			Value:    encodedSession,
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   60 * 60, // 1 hour, equivalent to session.Options.MaxAge
+		}
+		http.SetCookie(w, cookie)
+	}
 
 	for _, comment := range comments {
 		comment.Likes = GetLikeCount(comment.ID, "comment")
@@ -207,19 +287,33 @@ func addComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the current user ID from the session
-	session, err := store.Get(r, "forum-session")
-	if err != nil {
-		log.Fatal(err)
+	session := make(map[string]interface{})
+	if cookie, err := r.Cookie("forum-session"); err == nil {
+		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+			log.Printf("Error decoding session: %v", err)
+		}
 	}
 
 	// set the session's max age to 2 minutes
-	session.Options.MaxAge = 60 * 60 // in seconds
+	// session.Options.MaxAge = 60 * 60 // in seconds
 
 	// update the session's last activity time
-	session.Values["last_activity"] = time.Now().Unix()
-	session.Save(r, w)
+	session["last_activity"] = time.Now().Unix()
+	encodedSession, err := store.Encode("forum-session", session)
+	if err != nil {
+		log.Printf("Error encoding session: %v", err)
+	} else {
+		cookie := &http.Cookie{
+			Name:     "forum-session",
+			Value:    encodedSession,
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   60 * 60, // 1 hour, equivalent to session.Options.MaxAge
+		}
+		http.SetCookie(w, cookie)
+	}
 
-	userID, ok := session.Values["user_id"].(int)
+	userID, ok := session["user_id"].(int)
 	if !ok {
 		http.Error(w, "User not logged in", http.StatusUnauthorized)
 		return
@@ -258,12 +352,14 @@ func dislike(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLikeOrDislike(w http.ResponseWriter, r *http.Request, isLike bool) {
-	session, err := store.Get(r, "forum-session")
-	if err != nil {
-		log.Fatal(err)
+	session := make(map[string]interface{})
+	if cookie, err := r.Cookie("forum-session"); err == nil {
+		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+			log.Printf("Error decoding session: %v", err)
+		}
 	}
 
-	userID, loggedIn := session.Values["user_id"].(int)
+	userID, loggedIn := session["user_id"].(int)
 	if !loggedIn {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -285,15 +381,15 @@ func handleLikeOrDislike(w http.ResponseWriter, r *http.Request, isLike bool) {
 
 	if isLike {
 		if isPost {
-			err = likePost(userID, id)
+			err = toggleLikePost(userID, id)
 		} else {
-			err = likeComment(userID, id)
+			err = toggleLikeComment(userID, id)
 		}
 	} else {
 		if isPost {
-			err = dislikePost(userID, id)
+			err = toggleDislikePost(userID, id)
 		} else {
-			err = dislikeComment(userID, id)
+			err = toggleDislikeComment(userID, id)
 		}
 	}
 
