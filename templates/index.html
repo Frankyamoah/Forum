@@ -8,7 +8,7 @@
 
 </head>
 <body>
-    <div id="loginandregister">
+  <div id="loginandregister">
     {{if .Username}}
     <p class="welcome">Welcome, {{.Username}}! <a class="logoutbtn" href="/logout">Logout</a></p>
     {{else}}
@@ -20,6 +20,7 @@
     {{if .Username}}
     <a class="newpostbtn" href="/newpost">Create a new post</a>
     {{end}}
+    </div>
   <div id="postcontainer">
       
     <h1>Posts</h1>
@@ -40,27 +41,38 @@
             <a href="/">Clear filter</a>
         </form>
     </div>
-       
+    <br>
+    <br>
+    <br>
+    <div class="fitscreen">
     {{range .Posts}}
-    <li>
-      <a href="/viewpost?id={{.ID}}">{{.Title}}</a> by {{.Author.Username}}
-      <form class="inline-form" action="/like" method="POST">
-        <input type="hidden" name="post_id" value="{{.ID}}">
-        <input type="submit" value="Like">
-      </form>
-      <form class="inline-form" action="/dislike" method="POST">
-        <input type="hidden" name="post_id" value="{{.ID}}">
-        <input type="submit" value="Dislike">
-      </form>
-      {{ $likes := GetLikeCount .ID "post" }}
-{{ $dislikes := GetDislikeCount .ID "post" }}
-{{if eq $likes 0}}0{{else}}{{$likes}}{{end}} Likes |
-{{if eq $dislikes 0}}0{{else}}{{$dislikes}}{{end}} Dislikes
+    <div class="postinfo">
+     
+        <a href="/viewpost?id={{.ID}}">{{.Title}}</a>&nbsp;&nbsp;by {{.Author.Username}} 
 
-      
-    </li>
+
+      <div class="likesanddislikes">
+    
+        <form class="inline-form" action="/like" method="POST">
+          <input type="hidden" name="post_id" value="{{.ID}}">
+          <input type="submit" value="Like">
+        </form>
+        <form class="inline-form" action="/dislike" method="POST">
+          <input type="hidden" name="post_id" value="{{.ID}}">
+          <input type="submit" value="Dislike">
+        </form>
+      </div>
+        {{ $likes := GetLikeCount .ID "post" }}
+  {{ $dislikes := GetDislikeCount .ID "post" }}
+  {{if eq $likes 0}}0{{else}}{{$likes}}{{end}} Likes &nbsp;&nbsp;
+  {{if eq $dislikes 0}}0{{else}}{{$dislikes}}{{end}} Dislikes
+     
+  
+        
+
+    </div>
 {{end}}
-
+</div>
     </ol>
 
   </div>

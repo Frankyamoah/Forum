@@ -226,3 +226,25 @@ func GetDislikeCount(id int, contentType string) int {
 	}
 	return count
 }
+
+func getCommentByID(commentID int) (Comment, error) {
+	row := db.QueryRow(`SELECT c.id, c.content, c.created_at, u.id, u.username, c.post_id
+			FROM comments c JOIN users u ON c.author_id = u.id
+			WHERE c.id = ?`, commentID)
+
+	var c Comment
+	err := row.Scan(&c.ID, &c.Content, &c.CreatedAt, &c.Author.ID, &c.Author.Username, &c.PostID)
+	if err != nil {
+		return Comment{}, err
+	}
+
+	return c, nil
+}
+
+func getPostIDByCommentID(commentID int) (int, error) {
+	comment, err := getCommentByID(commentID)
+	if err != nil {
+		return 0, err
+	}
+	return comment.PostID, nil
+}

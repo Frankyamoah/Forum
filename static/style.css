@@ -72,21 +72,6 @@
 .welcome{
     margin-left: 100px;
 }
-#postcontainer{
-    width: 900px;
-    height: fit-content;
-    background-color: palevioletred;
-    
-    position: absolute;
-    top: -50%;;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    margin: auto;
-
-    text-align: center;
-    list-style: none;
-}
 
 .inline-form {
     display: inline;
@@ -103,3 +88,58 @@
     padding: 0;
   }
   
+.postinfo{
+    
+    background-color: rgb(246, 196, 213);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-right: 30px;
+    margin-bottom: 30px;
+    border-radius: 10px;
+    width: 300px;
+    padding: 5px;
+   
+}
+.post-title-author {
+    flex: 100%;
+}
+
+.likesanddislikes {
+    display: flex;
+    flex: 100%;
+}
+
+.inline-form {
+    margin-right: 10px;
+}
+
+#postcontainer{
+    width: 900px;
+    height: fit-content;
+    background-color: palevioletred;
+    
+    position: absolute;
+    top: -20%;;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    border-radius: 10px;
+
+    text-align: center;
+    list-style: none;
+    
+}
+
+.fitscreen{
+    display: flex;
+    flex-direction: row;
+}
+
+.singlepost{
+    background-color: rgb(246, 196, 213);
+    border: 10px solid palevioletred;
+    margin-top: 100px;
+    padding: 10px;
+}

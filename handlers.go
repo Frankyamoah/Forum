@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	hashKey  = securecookie.GenerateRandomKey(64)
-	blockKey = securecookie.GenerateRandomKey(32)
+	hashKey  = []byte("01SFSforum")
+	blockKey = []byte("vienneseBiscuits")
 
 	store = securecookie.New(hashKey, blockKey)
 )
@@ -41,7 +41,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 			Value:    encodedSession,
 			Path:     "/",
 			HttpOnly: true,
-			MaxAge:   60 * 60, // 1 min, equivalent to session.Options.MaxAge
+			MaxAge:   300 * 60, // 5 mins, equivalent to session.Options.MaxAge
 		}
 		http.SetCookie(w, cookie)
 	}
@@ -86,7 +86,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// set the session's max age to 2 minutes
-			// session.Options.MaxAge = 60 * 60 // in seconds
+			// session.Options.MaxAge = 300 * 60 // i5 secsonds
 
 			// update the session's last activity time
 			session["last_activity"] = time.Now().Unix()
@@ -100,7 +100,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 					Value:    encodedSession,
 					Path:     "/",
 					HttpOnly: true,
-					MaxAge:   60 * 60, // 1 hour, equivalent to session.Options.MaxAge
+					MaxAge:   300 * 60, // 5 mins, equivalent to session.Options.MaxAge
 				}
 				http.SetCookie(w, cookie)
 			}
@@ -128,7 +128,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// set the session's max age to 2 minutes
-			// session.Options.MaxAge = 60 * 60 // in seconds
+			// session.Options.MaxAge = 300 * 60 // i5 secsonds
 
 			// update the session's last activity time
 			session["last_activity"] = time.Now().Unix()
@@ -141,7 +141,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 					Value:    encodedSession,
 					Path:     "/",
 					HttpOnly: true,
-					MaxAge:   60 * 60, // 1 hour, equivalent to session.Options.MaxAge
+					MaxAge:   300 * 60, // 5 mins, equivalent to session.Options.MaxAge
 				}
 				http.SetCookie(w, cookie)
 			}
@@ -163,7 +163,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// set the session's max age to 2 minutes
-	// session.Options.MaxAge = 60 * 60 // in seconds
+	// session.Options.MaxAge = 300 * 60 // i5 secsonds
 
 	// update the session's last activity time
 	session["last_activity"] = time.Now().Unix()
@@ -179,7 +179,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 			Value:    encodedSession,
 			Path:     "/",
 			HttpOnly: true,
-			MaxAge:   60 * 60, // 1 hour, equivalent to session.Options.MaxAge
+			MaxAge:   300 * 60, // 5 mins, equivalent to session.Options.MaxAge
 		}
 		http.SetCookie(w, cookie)
 	}
@@ -196,7 +196,7 @@ func newPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// set the session's max age to 2 minutes
-	// session.Options.MaxAge = 60 * 60 // in seconds
+	// session.Options.MaxAge = 300 * 60 // i5 secsonds
 
 	// update the session's last activity time
 	session["last_activity"] = time.Now().Unix()
@@ -241,7 +241,7 @@ func viewPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// session.Options.MaxAge = 60 * 60 // in seconds
+	// session.Options.MaxAge = 300 * 60 // i5 secsonds
 	session["last_activity"] = time.Now().Unix()
 	encodedSession, err := store.Encode("forum-session", session)
 	if err != nil {
@@ -252,7 +252,7 @@ func viewPost(w http.ResponseWriter, r *http.Request) {
 			Value:    encodedSession,
 			Path:     "/",
 			HttpOnly: true,
-			MaxAge:   60 * 60, // 1 hour, equivalent to session.Options.MaxAge
+			MaxAge:   300 * 60, // 5 mins, equivalent to session.Options.MaxAge
 		}
 		http.SetCookie(w, cookie)
 	}
@@ -295,7 +295,7 @@ func addComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// set the session's max age to 2 minutes
-	// session.Options.MaxAge = 60 * 60 // in seconds
+	// session.Options.MaxAge = 300 * 60 // i5 secsonds
 
 	// update the session's last activity time
 	session["last_activity"] = time.Now().Unix()
@@ -308,7 +308,7 @@ func addComment(w http.ResponseWriter, r *http.Request) {
 			Value:    encodedSession,
 			Path:     "/",
 			HttpOnly: true,
-			MaxAge:   60 * 60, // 1 hour, equivalent to session.Options.MaxAge
+			MaxAge:   300 * 60, // 5 mins, equivalent to session.Options.MaxAge
 		}
 		http.SetCookie(w, cookie)
 	}
@@ -365,31 +365,25 @@ func handleLikeOrDislike(w http.ResponseWriter, r *http.Request, isLike bool) {
 		return
 	}
 
-	postID, err := strconv.Atoi(r.FormValue("post_id"))
-	isPost := err == nil
+	postID, postErr := strconv.Atoi(r.FormValue("post_id"))
+	commentID, commentErr := strconv.Atoi(r.FormValue("comment_id"))
 
-	var id int
-	if isPost {
-		id = postID
-	} else {
-		id, err = strconv.Atoi(r.FormValue("comment_id"))
-		if err != nil {
-			http.Error(w, "Invalid post or comment ID", http.StatusBadRequest)
-			return
-		}
+	if postErr != nil && commentErr != nil {
+		http.Error(w, "Invalid post or comment ID", http.StatusBadRequest)
+		return
 	}
-
-	if isLike {
-		if isPost {
-			err = toggleLikePost(userID, id)
+	var err error
+	if postErr == nil { // Liking or disliking a post
+		if isLike {
+			err = toggleLikePost(userID, postID)
 		} else {
-			err = toggleLikeComment(userID, id)
+			err = toggleDislikePost(userID, postID)
 		}
-	} else {
-		if isPost {
-			err = toggleDislikePost(userID, id)
+	} else { // Liking or disliking a comment
+		if isLike {
+			err = toggleLikeComment(userID, commentID)
 		} else {
-			err = toggleDislikeComment(userID, id)
+			err = toggleDislikeComment(userID, commentID)
 		}
 	}
 
@@ -399,8 +393,14 @@ func handleLikeOrDislike(w http.ResponseWriter, r *http.Request, isLike bool) {
 	}
 
 	redirectPath := "/"
-	if !isPost {
-		redirectPath = "/viewpost?id=" + r.FormValue("post_id")
+	if postErr != nil { // When it's a comment, redirect to the comment's post
+		postID, err := getPostIDByCommentID(commentID)
+		if err != nil {
+			http.Error(w, "Error finding associated post for comment", http.StatusInternalServerError)
+			return
+		}
+		redirectPath = "/viewpost?id=" + strconv.Itoa(postID)
 	}
+
 	http.Redirect(w, r, redirectPath, http.StatusSeeOther)
 }
