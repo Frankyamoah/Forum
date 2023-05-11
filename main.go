@@ -19,7 +19,15 @@ func init() {
 		panic(err)
 	}
 
-	tpl = template.Must(template.ParseGlob("templates/*.html"))
+	tpl = template.New("").Funcs(template.FuncMap{
+		"GetLikeCount":    GetLikeCount,
+		"GetDislikeCount": GetDislikeCount,
+	})
+
+	tpl, err = tpl.ParseGlob("templates/*.html")
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {
@@ -29,6 +37,9 @@ func main() {
 	http.HandleFunc("/logout", logout)
 	http.HandleFunc("/newpost", newPost)
 	http.HandleFunc("/viewpost", viewPost)
+	http.HandleFunc("/addcomment", addComment)
+	http.HandleFunc("/like", like)
+	http.HandleFunc("/dislike", dislike)
 
 	staticFileServer := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static", staticFileServer))

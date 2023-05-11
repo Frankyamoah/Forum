@@ -72,18 +72,87 @@
 .welcome{
     margin-left: 100px;
 }
+<<<<<<< HEAD
+=======
+
+.inline-form {
+    display: inline;
+  }
+  
+  .inline-form input[type="submit"] {
+    background: none;
+    border: none;
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0;
+  }
+  
+.postinfo{
+    
+    background-color: rgb(246, 196, 213);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-right: 30px;
+    margin-bottom: 30px;
+    border-radius: 10px;
+    width: 300px;
+    padding: 5px;
+   
+}
+.post-title-author {
+    flex: 100%;
+}
+
+.likesanddislikes {
+    display: flex;
+    flex: 100%;
+}
+
+.inline-form {
+    margin-right: 10px;
+}
+
+>>>>>>> origin/Sumeya_Branch
 #postcontainer{
     width: 900px;
     height: fit-content;
     background-color: palevioletred;
     
     position: absolute;
+<<<<<<< HEAD
     top: -50%;;
+=======
+    top: -20%;;
+>>>>>>> origin/Sumeya_Branch
     bottom: 0;
     left: 0;
     right: 0;
     margin: auto;
+<<<<<<< HEAD
 
     text-align: center;
     list-style: none;
+=======
+    border-radius: 10px;
+
+    text-align: center;
+    list-style: none;
+    
+}
+
+.fitscreen{
+    display: flex;
+    flex-direction: row;
+}
+
+.singlepost{
+    background-color: rgb(246, 196, 213);
+    border: 10px solid palevioletred;
+    margin-top: 100px;
+    padding: 10px;
+>>>>>>> origin/Sumeya_Branch
 }

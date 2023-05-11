@@ -8,14 +8,24 @@
 </head>
 <body>
     <h1>Create a new post</h1>
-    <form method="post" action="/newpost">
+    <form method="POST" action="/newpost">
         <label for="title">Title:</label>
         <input type="text" name="title" required>
         <br>
         <label for="content">Content:</label>
         <textarea name="content" required></textarea>
         <br>
-        <input type="submit" value="Submit">
+        <label for="category">Category:</label>
+        <select name="category" id="category" multiple required>
+            <option value="gaming">Gaming</option>
+            <option value="technology">Technology</option>
+            <option value="lifestyle">Lifestyle</option>
+            <option value="travel">Travel</option>
+            <option value="cooking">Cooking</option>
+            <option value="other">Other</option>
+        </select>
+        <br>
+        <input type="submit" value="Create post">
     </form>
     <p><a href="/">Back to the forum</a></p>
 </body>

@@ -1,0 +1,15 @@
+{{define "header"}}
+<div id="loginandregister">
+    {{if .Username}}
+    <p class="welcome">Welcome, {{.Username}}! <a class="logoutbtn" href="/logout">Logout</a></p>
+    {{else}}
+    
+        <p><a class="loginbtn" href="/login">Login</a>  <a class="registerbtn" href="/register">Register</a></p>
+    </div>
+    {{end}}
+
+    {{if .Username}}
+    <a class="newpostbtn" href="/newpost">Create a new post</a>
+    {{end}}
+    </div>
+{{end}}

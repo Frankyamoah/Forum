@@ -7,9 +7,53 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>{{.Title}}</h1>
-    <p>By {{.Author.Username}} on {{.CreatedAt}}</p>
-    <div>{{.Content}}</div>
+    <a class="newpostbtn" href="/newpost">Create a new post</a>
+    </div>
+    <br>
+    <div class="singlepost">
+    <h1>{{.Post.Title}}</h1>
+    <!--on {{.Post.CreatedAt}}-->
+    <p>By {{.Post.Author.Username}} </p>
+    <div>{{.Post.Content}}</div>
+    <br>
+<div class="comments">
+    <h3>Comments:</h3>
+  {{range .Comments}}
+<div class="comment">
+  <p>{{.Content}}</p>
+  <!-- on {{.CreatedAt.Format "2006-01-02 15:04:05"}}-->
+  <p><em>By {{.Author.Username}} </em></p>
+  <form class="inline-form" action="/like" method="POST">
+    <input type="hidden" name="comment_id" value="{{.ID}}">
+    <input type="submit" value="Like">
+  </form>
+  <form class="inline-form" action="/dislike" method="POST">
+    <input type="hidden" name="comment_id" value="{{.ID}}">
+    <input type="submit" value="Dislike">
+  </form>
+  {{ $likes := GetLikeCount .ID "comment" }}
+  {{ $dislikes := GetDislikeCount .ID "comment" }}
+  {{if eq $likes 0}}0{{else}}{{$likes}}{{end}} Likes |
+  {{if eq $dislikes 0}}0{{else}}{{$dislikes}}{{end}} Dislikes
+</div>
+{{else}}
+<p>No comments yet.</p>
+{{end}}
+
+  </div>
+  <!-- Add comment form -->
+<div class="add-comment">
+  <h3>Add a comment:</h3>
+  <form action="/addcomment" method="POST">
+      <input type="hidden" name="post_id" value="{{.Post.ID}}">
+      <textarea name="content" rows="5" cols="50" required></textarea><br>
+      
+      <input type="submit" value="Submit">
+  </form>
+</div>
+</div>
+  
     <p><a href="/">Back to the forum</a></p>
+    
 </body>
 </html>
