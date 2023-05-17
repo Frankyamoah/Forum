@@ -30,6 +30,15 @@ CREATE TABLE IF NOT EXISTS categories (
 	id INTEGER PRIMARY KEY,
 	name TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS posts_categories (
+    post_id INTEGER NOT NULL,
+    category TEXT NOT NULL,
+    FOREIGN KEY (post_id) REFERENCES posts (id),
+    FOREIGN KEY (category) REFERENCES categories (name),
+    PRIMARY KEY (post_id, category)
+);
+
 CREATE TABLE IF NOT EXISTS post_likes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,

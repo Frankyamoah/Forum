@@ -72,8 +72,6 @@
 .welcome{
     margin-left: 100px;
 }
-<<<<<<< HEAD
-=======
 
 .inline-form {
     display: inline;
@@ -116,36 +114,28 @@
     margin-right: 10px;
 }
 
->>>>>>> origin/Sumeya_Branch
 #postcontainer{
     width: 900px;
     height: fit-content;
     background-color: palevioletred;
     
     position: absolute;
-<<<<<<< HEAD
-    top: -50%;;
-=======
     top: -20%;;
->>>>>>> origin/Sumeya_Branch
     bottom: 0;
     left: 0;
     right: 0;
     margin: auto;
-<<<<<<< HEAD
-
-    text-align: center;
-    list-style: none;
-=======
     border-radius: 10px;
 
     text-align: center;
     list-style: none;
+
     
 }
 
-.fitscreen{
+.postdisplay{
     display: flex;
+    flex-wrap: wrap;
     flex-direction: row;
 }
 
@@ -154,5 +144,5 @@
     border: 10px solid palevioletred;
     margin-top: 100px;
     padding: 10px;
->>>>>>> origin/Sumeya_Branch
 }
+

@@ -15,15 +15,26 @@
         <label for="content">Content:</label>
         <textarea name="content" required></textarea>
         <br>
-        <label for="category">Category:</label>
-        <select name="category" id="category" multiple required>
-            <option value="gaming">Gaming</option>
-            <option value="technology">Technology</option>
-            <option value="lifestyle">Lifestyle</option>
-            <option value="travel">Travel</option>
-            <option value="cooking">Cooking</option>
-            <option value="other">Other</option>
-        </select>
+        
+        <label>Categories:</label><br>
+        <input type="checkbox" name="category[]" value="gaming">
+        <label for="category">Gaming</label><br>
+        
+        <input type="checkbox" name="category[]" value="technology">
+        <label for="category">Technology</label><br>
+        
+        <input type="checkbox" name="category[]" value="lifestyle">
+        <label for="category">Lifestyle</label><br>
+        
+        <input type="checkbox" name="category[]" value="travel">
+        <label for="category">Travel</label><br>
+
+        <input type="checkbox" name="category[]" value="cooking">
+        <label for="category">Cooking</label><br>
+
+        <input type="checkbox" name="category[]" value="other">
+        <label for="category">Other</label><br>
+        
         <br>
         <input type="submit" value="Create post">
     </form>

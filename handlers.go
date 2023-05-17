@@ -18,7 +18,6 @@ var (
 
 //var store = sessions.NewCookieStore([]byte("ForumProject"))
 
-// index handles the forum's main page.
 func index(w http.ResponseWriter, r *http.Request) {
 	session := make(map[string]interface{})
 	if cookie, err := r.Cookie("forum-session"); err == nil {
@@ -46,12 +45,17 @@ func index(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, cookie)
 	}
 
-	categoryFilter := r.URL.Query().Get("category")
+	categoryFilters := r.URL.Query()["category[]"]
 	var posts []Post
-	if categoryFilter == "" {
+	if len(categoryFilters) == 0 {
 		posts = getAllPosts()
+		//fmt.Println(categoryFilters, "empty []")
 	} else {
-		posts = getPostsByCategory(categoryFilter)
+
+		//fmt.Println(categoryFilters, "full []")
+		posts = getPostsByCategory(categoryFilters)
+		//fmt.Println(categoryFilters)
+		//fmt.Println(posts, "struct")
 	}
 
 	for _, post := range posts {
@@ -112,13 +116,13 @@ func login(w http.ResponseWriter, r *http.Request) {
 	tpl.ExecuteTemplate(w, "login.html", nil)
 }
 
-// register handles user registration.
 func register(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		username := r.FormValue("username")
 		password := r.FormValue("password")
+		email := r.FormValue("email")
 
-		err := registerUser(username, password)
+		err := registerUser(username, password, email)
 		if err == nil {
 			session := make(map[string]interface{})
 			if cookie, err := r.Cookie("forum-session"); err == nil {
@@ -128,7 +132,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// set the session's max age to 2 minutes
-			// session.Options.MaxAge = 300 * 60 // i5 secsonds
+			// session.Options.MaxAge = 300 60 // i5 secsonds
 
 			// update the session's last activity time
 			session["last_activity"] = time.Now().Unix()
@@ -210,8 +214,8 @@ func newPost(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		title := r.FormValue("title")
 		content := r.FormValue("content")
-		category := r.FormValue("category")          // Add this line
-		createPost(userID, title, content, category) // Pass category to createPost
+		categories := r.Form["category[]"]             // Add this line
+		createPost(userID, title, content, categories) // Pass category to createPost
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
