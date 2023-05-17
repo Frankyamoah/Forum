@@ -72,7 +72,18 @@ func authenticateUser(username, password string) (int, error) {
 }
 
 func registerUser(username, password, email string) error {
-	_, err := db.Exec("INSERT INTO users (username, password, email) VALUES (?, ?, ?)", username, password, email)
+	// Check if the user already exists
+	row := db.QueryRow("SELECT Username, Email FROM users WHERE Username = ? OR Email = ?", username, email)
+	var existingUser string
+	var existingEmail string
+	err := row.Scan(&existingUser, &existingEmail)
+	if err == nil {
+		return fmt.Errorf("username or email already exists")
+	} else if err != sql.ErrNoRows {
+		return err
+	}
+
+	_, err = db.Exec("INSERT INTO users (Username, Password, Email) VALUES (?, ?, ?)", username, password, email)
 	return err
 }
 

@@ -122,8 +122,17 @@ func register(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 		email := r.FormValue("email")
 
+		// Check if the form inputs are not empty
+		if username == "" || password == "" || email == "" {
+			http.Error(w, "All fields are required", http.StatusBadRequest)
+			return
+		}
+
 		err := registerUser(username, password, email)
-		if err == nil {
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		} else {
 			session := make(map[string]interface{})
 			if cookie, err := r.Cookie("forum-session"); err == nil {
 				if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
@@ -131,10 +140,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// set the session's max age to 2 minutes
-			// session.Options.MaxAge = 300 60 // i5 secsonds
-
-			// update the session's last activity time
+			// Update the session's last activity time
 			session["last_activity"] = time.Now().Unix()
 			encodedSession, err := store.Encode("forum-session", session)
 			if err != nil {
@@ -145,7 +151,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 					Value:    encodedSession,
 					Path:     "/",
 					HttpOnly: true,
-					MaxAge:   300 * 60, // 5 mins, equivalent to session.Options.MaxAge
+					MaxAge:   300 * 60, // 5 mins
 				}
 				http.SetCookie(w, cookie)
 			}
