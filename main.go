@@ -40,6 +40,7 @@ func main() {
 	http.HandleFunc("/addcomment", addComment)
 	http.HandleFunc("/like", like)
 	http.HandleFunc("/dislike", dislike)
+	http.HandleFunc("/filter", filterHandler) // add this line
 
 	staticFileServer := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static", staticFileServer))

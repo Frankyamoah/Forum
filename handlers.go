@@ -26,10 +26,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// set the session's max age to 2 minutes
-	//session.Options.MaxAge = 60 // in seconds
-
-	// update the session's last activity time
 	session["last_activity"] = time.Now().Unix()
 	encodedSession, err := store.Encode("forum-session", session)
 	if err != nil {
@@ -40,8 +36,9 @@ func index(w http.ResponseWriter, r *http.Request) {
 			Value:    encodedSession,
 			Path:     "/",
 			HttpOnly: true,
-			MaxAge:   300 * 60, // 5 mins, equivalent to session.Options.MaxAge
+			MaxAge:   300 * 60, // 5 mins
 		}
+
 		http.SetCookie(w, cookie)
 	}
 
@@ -49,13 +46,8 @@ func index(w http.ResponseWriter, r *http.Request) {
 	var posts []Post
 	if len(categoryFilters) == 0 {
 		posts = getAllPosts()
-		//fmt.Println(categoryFilters, "empty []")
 	} else {
-
-		//fmt.Println(categoryFilters, "full []")
 		posts = getPostsByCategory(categoryFilters)
-		//fmt.Println(categoryFilters)
-		//fmt.Println(posts, "struct")
 	}
 
 	for _, post := range posts {
@@ -220,8 +212,8 @@ func newPost(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		title := r.FormValue("title")
 		content := r.FormValue("content")
-		categories := r.Form["category[]"]             // Add this line
-		createPost(userID, title, content, categories) // Pass category to createPost
+		categories := r.FormValue("category[]")
+		createPost(title, content, userID, []string{categories})
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -413,4 +405,40 @@ func handleLikeOrDislike(w http.ResponseWriter, r *http.Request, isLike bool) {
 	}
 
 	http.Redirect(w, r, redirectPath, http.StatusSeeOther)
+}
+
+func filterHandler(w http.ResponseWriter, r *http.Request) {
+	session := make(map[string]interface{})
+	if cookie, err := r.Cookie("forum-session"); err == nil {
+		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+			log.Printf("Error decoding session: %v", err)
+		}
+	}
+
+	categories, ok := r.URL.Query()["category[]"]
+	if !ok {
+		log.Println("No categories found in the form data")
+		// Handle the error or set a default behavior
+		// For example, you can redirect to the home page or show an error message.
+	}
+
+	posts := getPostsByCategory(categories)
+
+	for i, post := range posts {
+		posts[i].Likes = GetLikeCount(post.ID, "post")
+		posts[i].Dislikes = GetDislikeCount(post.ID, "post")
+	}
+
+	data := struct {
+		Username string
+		Posts    []Post
+	}{
+		Username: getUsernameFromSession(session),
+		Posts:    posts,
+	}
+
+	err := tpl.ExecuteTemplate(w, "index.html", data)
+	if err != nil {
+		log.Printf("Error while executing template: %v", err)
+	}
 }

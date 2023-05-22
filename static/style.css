@@ -114,35 +114,25 @@
     margin-right: 10px;
 }
 
-#postcontainer{
-    width: 900px;
-    height: fit-content;
-    background-color: palevioletred;
-    
-    position: absolute;
-    top: -20%;;
-    bottom: 0;
-    left: 0;
-    right: 0;
+#postcontainer {
+    max-width: 900px;
     margin: auto;
+    padding: 20px;
+    background-color: palevioletred;
     border-radius: 10px;
-
     text-align: center;
-    list-style: none;
-
-    
 }
 
-.postdisplay{
+.postdisplay {
     display: flex;
     flex-wrap: wrap;
-    flex-direction: row;
+    justify-content: center;
 }
 
-.singlepost{
+.singlepost {
     background-color: rgb(246, 196, 213);
     border: 10px solid palevioletred;
-    margin-top: 100px;
+    margin: 10px;
     padding: 10px;
+    max-width: 300px; /* Adjust this value as needed */
 }
-

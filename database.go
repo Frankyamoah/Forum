@@ -12,6 +12,7 @@ import (
 type User struct {
 	ID       int
 	Username string
+	Email    string
 }
 
 type Post struct {
@@ -20,7 +21,7 @@ type Post struct {
 	Content   string
 	CreatedAt time.Time
 	Author    User
-	Category  string
+	Category  []string
 	Likes     int
 	Dislikes  int
 }
@@ -36,9 +37,14 @@ type Comment struct {
 }
 
 func getAllPosts() []Post {
-	rows, err := db.Query(`SELECT p.id, p.title, p.content, p.created_at, u.id, u.username, p.category
-		FROM posts p JOIN users u ON p.author_id = u.id
-		ORDER BY p.created_at DESC`)
+	stmt := `SELECT p.id, p.title, p.content, p.created_at, u.ID, u.Username, GROUP_CONCAT(c.name) as categories 
+		FROM posts p 
+		JOIN users u ON p.author_id = u.ID 
+		LEFT JOIN posts_categories pc ON p.id = pc.post_id
+		LEFT JOIN categories c ON pc.category_id = c.id
+		GROUP BY p.id 
+		ORDER BY p.created_at DESC`
+	rows, err := db.Query(stmt)
 	if err != nil {
 		panic(err)
 	}
@@ -47,13 +53,14 @@ func getAllPosts() []Post {
 	var posts []Post
 	for rows.Next() {
 		var p Post
-		err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username, &p.Category)
+		var categories string
+		err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username, &categories)
 		if err != nil {
 			panic(err)
 		}
+		p.Category = strings.Split(categories, ",")
 		posts = append(posts, p)
 	}
-
 	return posts
 }
 
@@ -73,7 +80,7 @@ func authenticateUser(username, password string) (int, error) {
 
 func registerUser(username, password, email string) error {
 	// Check if the user already exists
-	row := db.QueryRow("SELECT Username, Email FROM users WHERE Username = ? OR Email = ?", username, email)
+	row := db.QueryRow("SELECT username, email FROM users WHERE Username = ? OR Email = ?", username, email)
 	var existingUser string
 	var existingEmail string
 	err := row.Scan(&existingUser, &existingEmail)
@@ -83,7 +90,7 @@ func registerUser(username, password, email string) error {
 		return err
 	}
 
-	_, err = db.Exec("INSERT INTO users (Username, Password, Email) VALUES (?, ?, ?)", username, password, email)
+	_, err = db.Exec("INSERT INTO users (Username, Password, Email) VALUES (?, ?, ?)", strings.ToLower(username), password, strings.ToLower(email))
 	return err
 }
 
@@ -101,43 +108,43 @@ func getUsernameFromSession(session map[string]interface{}) string {
 
 	return username
 }
-func createPost(userID int, title, content string, categories []string) (int, error) {
-	// Your code to create the post in the database
-
-	// Execute the INSERT statement to create the post
-	result, err := db.Exec("INSERT INTO posts (title, content, author_id, created_at) VALUES (?, ?, ?, ?)",
-		title, content, userID, time.Now())
+func createPost(title string, content string, authorID int, categories []string) int {
+	// Step 1: Insert the post into the 'posts' table
+	query := "INSERT INTO posts (title, content, author_id, created_at) VALUES (?, ?, ?, ?)"
+	stmt, err := db.Prepare(query)
 	if err != nil {
-		return 0, fmt.Errorf("error creating post: %w", err)
+		log.Fatal(err)
+	}
+	res, err := stmt.Exec(title, content, authorID, time.Now())
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// Get the post ID of the newly inserted post
-	postID, err := result.LastInsertId()
+	id, err := res.LastInsertId()
 	if err != nil {
-		return 0, fmt.Errorf("error getting post ID: %w", err)
+		log.Fatal(err)
+	}
+	postID := int(id)
+
+	// Step 2: Insert the post-category relations into the 'posts_categories' table
+	err = postCategoryRelation(postID, categories)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// Call the postCategoryRelation function to populate the post_categories table
-	err = postCategoryRelation(int(postID), categories)
-	if err != nil {
-		log.Printf("Error inserting post category relations: %v", err)
-		// Handle the error accordingly
-		return 0, err
-	}
-
-	return int(postID), nil
+	return postID
 }
 
-// postCategoryRelation populates the post_categories table based on post ID and categories.
+// postCategoryRelation populates the posts_categories table based on post ID and categories.
 func postCategoryRelation(postID int, categories []string) error {
-	stmt, err := db.Prepare("INSERT INTO posts_categories (post_id, category) VALUES (?, ?)")
+	stmt, err := db.Prepare("INSERT INTO posts_categories (post_id, category_id) VALUES (?, (SELECT id FROM categories WHERE name = ?))")
 	if err != nil {
 		return fmt.Errorf("error preparing statement: %w", err)
 	}
 	defer stmt.Close()
-
 	for _, category := range categories {
-		_, err = stmt.Exec(postID, category)
+		capitalizedCategory := strings.Title(category)
+		_, err = stmt.Exec(postID, capitalizedCategory)
 		if err != nil {
 			return fmt.Errorf("error inserting category: %w", err)
 		}
@@ -147,15 +154,23 @@ func postCategoryRelation(postID int, categories []string) error {
 }
 
 func getPost(postID string) (Post, error) {
-	row := db.QueryRow(`SELECT p.id, p.title, p.content, p.category, p.created_at, u.id, u.username
-			FROM posts p JOIN users u ON p.author_id = u.id
-			WHERE p.id = ?`, postID)
+	row := db.QueryRow(`SELECT p.id, p.title, p.content, p.created_at, u.id, u.username
+	FROM posts p JOIN users u ON p.author_id = u.id
+	WHERE p.id = ?`, postID)
 
 	var p Post
-	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.Category, &p.CreatedAt, &p.Author.ID, &p.Author.Username)
+	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username)
 	if err != nil {
+		fmt.Print("error scanning datbase into struct")
 		return Post{}, err
 	}
+
+	categories, err := getPostCategories(p.ID)
+	if err != nil {
+		fmt.Print("error getting post categories")
+		return Post{}, err
+	}
+	p.Category = categories
 
 	return p, nil
 }
@@ -189,52 +204,50 @@ func getPostComments(postID int) ([]Comment, error) {
 }
 
 func getPostsByCategory(categories []string) []Post {
-	query := `SELECT p.id, p.title, p.content, p.created_at, u.id, u.username, p.category
-			  FROM posts p JOIN users u ON p.author_id = u.id
-			  WHERE p.category IN (?)`
+	query := `SELECT p.id, p.title, p.content, p.created_at, u.ID, u.Username, GROUP_CONCAT(pc.category)
+			  FROM posts p
+			  JOIN users u ON p.author_id = u.ID
+			  LEFT JOIN posts_categories pc ON p.id = pc.post_id
+			  JOIN categories c ON pc.category_id = c.id
+			  WHERE c.name IN `
 
-	// Prepare the placeholders for the category values
-	placeholders := strings.TrimRight(strings.Repeat("?,", len(categories)), ",")
-	query = strings.Replace(query, "(?)", "("+placeholders+")", -1)
+	placeholders := "(" + strings.Trim(strings.Repeat("?,", len(categories)), ",") + ")"
+	query += placeholders
+	query += " GROUP BY p.id"
 
-	// Create the arguments slice to pass to the query
 	args := make([]interface{}, len(categories))
 	for i, category := range categories {
 		args[i] = category
-		//fmt.Println(category, i, "args")
 	}
-
-	// Create a map to store posts and avoid duplicates
-	postsMap := make(map[int]Post)
-
+	log.Printf("Query: %v", query)
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error while executing query: %v", err)
+		return nil
 	}
 	defer rows.Close()
 
+	var posts []Post
 	for rows.Next() {
 		var p Post
-		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username, &p.Category); err != nil {
-			log.Fatal(err)
+		var categories string
+		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username, &categories); err != nil {
+			log.Printf("Error while scanning rows: %v", err)
+			continue
 		}
-		postsMap[p.ID] = p
-	}
-	if err := rows.Err(); err != nil {
-		log.Fatal(err)
+		p.Category = strings.Split(categories, ",")
+		posts = append(posts, p)
 	}
 
-	// Convert the map of posts to a slice
-	posts := make([]Post, 0, len(postsMap))
-	for _, post := range postsMap {
-		posts = append(posts, post)
+	if err := rows.Err(); err != nil {
+		log.Printf("Error with rows: %v", err)
 	}
 
 	return posts
 }
 
 func toggleLikePost(userID, postID int) error {
-	_, err := db.Exec(`INSERT INTO post_likes (user_id, post_id, liked, disliked) VALUES (?, ?, true, false) ON CONFLICT (user_id, post_id) DO UPDATE SET liked = NOT post_likes.liked, disliked = false`, userID, postID)
+	_, err := db.Exec(`INSERT INTO post_likes (user_id, post_id, liked, disliked) VALUES (?, ?, 1, 0) ON DUPLICATE KEY UPDATE liked = NOT liked, disliked = 0`, userID, postID)
 	if err != nil {
 		log.Printf("Error toggling like: %v", err)
 		return err
@@ -243,7 +256,7 @@ func toggleLikePost(userID, postID int) error {
 }
 
 func toggleDislikePost(userID, postID int) error {
-	_, err := db.Exec(`INSERT INTO post_likes (user_id, post_id, liked, disliked) VALUES (?, ?, false, true) ON CONFLICT (user_id, post_id) DO UPDATE SET disliked = NOT post_likes.disliked, liked = false`, userID, postID)
+	_, err := db.Exec(`INSERT INTO post_likes (user_id, post_id, liked, disliked) VALUES (?, ?, 0, 1) ON DUPLICATE KEY UPDATE disliked = NOT disliked, liked = 0`, userID, postID)
 	if err != nil {
 		log.Printf("Error toggling dislike: %v", err)
 		return err
@@ -251,8 +264,8 @@ func toggleDislikePost(userID, postID int) error {
 	return nil
 }
 
-func toggleLikeComment(userID, postID int) error {
-	_, err := db.Exec(`INSERT INTO comment_likes (user_id, comment_id, liked, disliked) VALUES (?, ?, true, false) ON CONFLICT (user_id, comment_id) DO UPDATE SET liked = NOT comment_likes.liked, disliked = false`, userID, postID)
+func toggleLikeComment(userID, commentID int) error {
+	_, err := db.Exec(`INSERT INTO comment_likes (user_id, comment_id, liked, disliked) VALUES (?, ?, 1, 0) ON DUPLICATE KEY UPDATE liked = NOT liked, disliked = 0`, userID, commentID)
 	if err != nil {
 		log.Printf("Error toggling like: %v", err)
 		return err
@@ -260,8 +273,8 @@ func toggleLikeComment(userID, postID int) error {
 	return nil
 }
 
-func toggleDislikeComment(userID, postID int) error {
-	_, err := db.Exec(`INSERT INTO comment_likes (user_id, comment_id, liked, disliked) VALUES (?, ?, false, true) ON CONFLICT (user_id, comment_id) DO UPDATE SET disliked = NOT comment_likes.disliked, liked = false`, userID, postID)
+func toggleDislikeComment(userID, commentID int) error {
+	_, err := db.Exec(`INSERT INTO comment_likes (user_id, comment_id, liked, disliked) VALUES (?, ?, 0, 1) ON DUPLICATE KEY UPDATE liked = 0, disliked = NOT disliked`, userID, commentID)
 	if err != nil {
 		log.Printf("Error toggling dislike: %v", err)
 		return err
@@ -321,4 +334,54 @@ func getPostIDByCommentID(commentID int) (int, error) {
 		return 0, err
 	}
 	return comment.PostID, nil
+}
+func addPostCategories(postID int, categories []string) {
+	// Prepare the statement for fetching category ID
+	catIDStmt, err := db.Prepare("SELECT id FROM categories WHERE name = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Prepare the statement for inserting post-category relation
+	stmt, err := db.Prepare("INSERT INTO posts_categories (post_id, category_id) VALUES (?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, categoryName := range categories {
+		// Fetch the category ID
+		var categoryID int
+		capitalizedCategory := strings.Title(categoryName) // Capitalize the category name
+		err = catIDStmt.QueryRow(capitalizedCategory).Scan(&categoryID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Insert the post-category relation
+		_, err = stmt.Exec(postID, categoryID)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+// This function will fetch categories for a specific post
+func getPostCategories(postID int) ([]string, error) {
+	rows, err := db.Query("SELECT c.name FROM categories c JOIN posts_categories pc ON c.id = pc.category_id WHERE pc.post_id = ?", postID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var categories []string
+	for rows.Next() {
+		var category string
+		err = rows.Scan(&category)
+		if err != nil {
+			return nil, err
+		}
+		categories = append(categories, category)
+	}
+
+	return categories, nil
 }
