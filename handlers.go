@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/securecookie"
@@ -229,6 +230,14 @@ func viewPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	categories, err := getPostCategories(post.ID)
+	if err != nil {
+		log.Printf("Error fetching post categories: %v", err)
+		http.Error(w, "Error fetching post categories", http.StatusInternalServerError)
+		return
+	}
+	post.Category = categories
+
 	comments, err := getPostComments(post.ID)
 	if err != nil {
 		log.Printf("Error fetching comments: %v", err)
@@ -271,9 +280,6 @@ func viewPost(w http.ResponseWriter, r *http.Request) {
 		Post:     post,
 		Comments: comments,
 	}
-
-	// // Add this print statement to see if the function is being executed and check the data
-	//fmt.Printf("ViewPost function called. Post: %+v, Comments: %+v\n", post, comments)
 
 	err = tpl.ExecuteTemplate(w, "viewpost.html", data)
 	if err != nil {
@@ -441,4 +447,8 @@ func filterHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error while executing template: %v", err)
 	}
+}
+
+func joinStrings(strs []string, sep string) string {
+	return strings.Join(strs, sep)
 }

@@ -15,7 +15,7 @@
     <!--on {{.Post.CreatedAt}}-->
     <p>By {{.Post.Author.Username}} </p>
     <div>{{.Post.Content}}</div>
-    <P>Categories: {{.Post.Category}}</P>
+    <P>Categories: {{join .Post.Category ", "}}</P>
    
     <br>
 <div class="comments">

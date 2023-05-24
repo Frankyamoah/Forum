@@ -22,6 +22,7 @@ func init() {
 	tpl = template.New("").Funcs(template.FuncMap{
 		"GetLikeCount":    GetLikeCount,
 		"GetDislikeCount": GetDislikeCount,
+		"join":            joinStrings, // Add this line
 	})
 
 	tpl, err = tpl.ParseGlob("templates/*.html")
