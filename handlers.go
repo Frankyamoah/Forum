@@ -212,8 +212,8 @@ func newPost(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		title := r.FormValue("title")
 		content := r.FormValue("content")
-		categories := r.FormValue("category[]")
-		createPost(title, content, userID, []string{categories})
+		categories := r.Form["category[]"]
+		createPost(title, content, userID, categories)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}

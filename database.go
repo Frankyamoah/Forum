@@ -37,11 +37,10 @@ type Comment struct {
 }
 
 func getAllPosts() []Post {
-	stmt := `SELECT p.id, p.title, p.content, p.created_at, u.ID, u.Username, GROUP_CONCAT(c.name) as categories 
+	stmt := `SELECT p.id, p.title, p.content, p.created_at, u.ID, u.Username, GROUP_CONCAT(pc.category) as categories 
 		FROM posts p 
 		JOIN users u ON p.author_id = u.ID 
 		LEFT JOIN posts_categories pc ON p.id = pc.post_id
-		LEFT JOIN categories c ON pc.category_id = c.id
 		GROUP BY p.id 
 		ORDER BY p.created_at DESC`
 	rows, err := db.Query(stmt)
@@ -53,12 +52,14 @@ func getAllPosts() []Post {
 	var posts []Post
 	for rows.Next() {
 		var p Post
-		var categories string
+		var categories sql.NullString
 		err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username, &categories)
 		if err != nil {
 			panic(err)
 		}
-		p.Category = strings.Split(categories, ",")
+		if categories.Valid {
+			p.Category = strings.Split(categories.String, ",")
+		}
 		posts = append(posts, p)
 	}
 	return posts
@@ -110,6 +111,7 @@ func getUsernameFromSession(session map[string]interface{}) string {
 }
 func createPost(title string, content string, authorID int, categories []string) int {
 	// Step 1: Insert the post into the 'posts' table
+	// removed 'category' from the query below because it isn't being used here
 	query := "INSERT INTO posts (title, content, author_id, created_at) VALUES (?, ?, ?, ?)"
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -137,14 +139,14 @@ func createPost(title string, content string, authorID int, categories []string)
 
 // postCategoryRelation populates the posts_categories table based on post ID and categories.
 func postCategoryRelation(postID int, categories []string) error {
-	stmt, err := db.Prepare("INSERT INTO posts_categories (post_id, category_id) VALUES (?, (SELECT id FROM categories WHERE name = ?))")
+	stmt, err := db.Prepare("INSERT INTO posts_categories (post_id, category, category_id) VALUES (?, ?, (SELECT id FROM categories WHERE name = ?))")
 	if err != nil {
 		return fmt.Errorf("error preparing statement: %w", err)
 	}
 	defer stmt.Close()
 	for _, category := range categories {
 		capitalizedCategory := strings.Title(category)
-		_, err = stmt.Exec(postID, capitalizedCategory)
+		_, err = stmt.Exec(postID, capitalizedCategory, capitalizedCategory)
 		if err != nil {
 			return fmt.Errorf("error inserting category: %w", err)
 		}
@@ -247,7 +249,7 @@ func getPostsByCategory(categories []string) []Post {
 }
 
 func toggleLikePost(userID, postID int) error {
-	_, err := db.Exec(`INSERT INTO post_likes (user_id, post_id, liked, disliked) VALUES (?, ?, 1, 0) ON DUPLICATE KEY UPDATE liked = NOT liked, disliked = 0`, userID, postID)
+	_, err := db.Exec(`INSERT INTO post_likes (user_id, post_id, liked, disliked) VALUES (?, ?, true, false) ON CONFLICT (user_id, post_id) DO UPDATE SET liked = NOT post_likes.liked, disliked = false`, userID, postID)
 	if err != nil {
 		log.Printf("Error toggling like: %v", err)
 		return err
@@ -256,7 +258,7 @@ func toggleLikePost(userID, postID int) error {
 }
 
 func toggleDislikePost(userID, postID int) error {
-	_, err := db.Exec(`INSERT INTO post_likes (user_id, post_id, liked, disliked) VALUES (?, ?, 0, 1) ON DUPLICATE KEY UPDATE disliked = NOT disliked, liked = 0`, userID, postID)
+	_, err := db.Exec(`INSERT INTO post_likes (user_id, post_id, liked, disliked) VALUES (?, ?, false, true) ON CONFLICT (user_id, post_id) DO UPDATE SET disliked = NOT post_likes.disliked, liked = false`, userID, postID)
 	if err != nil {
 		log.Printf("Error toggling dislike: %v", err)
 		return err
@@ -264,8 +266,8 @@ func toggleDislikePost(userID, postID int) error {
 	return nil
 }
 
-func toggleLikeComment(userID, commentID int) error {
-	_, err := db.Exec(`INSERT INTO comment_likes (user_id, comment_id, liked, disliked) VALUES (?, ?, 1, 0) ON DUPLICATE KEY UPDATE liked = NOT liked, disliked = 0`, userID, commentID)
+func toggleLikeComment(userID, postID int) error {
+	_, err := db.Exec(`INSERT INTO comment_likes (user_id, comment_id, liked, disliked) VALUES (?, ?, true, false) ON CONFLICT (user_id, comment_id) DO UPDATE SET liked = NOT comment_likes.liked, disliked = false`, userID, postID)
 	if err != nil {
 		log.Printf("Error toggling like: %v", err)
 		return err
@@ -273,8 +275,8 @@ func toggleLikeComment(userID, commentID int) error {
 	return nil
 }
 
-func toggleDislikeComment(userID, commentID int) error {
-	_, err := db.Exec(`INSERT INTO comment_likes (user_id, comment_id, liked, disliked) VALUES (?, ?, 0, 1) ON DUPLICATE KEY UPDATE liked = 0, disliked = NOT disliked`, userID, commentID)
+func toggleDislikeComment(userID, postID int) error {
+	_, err := db.Exec(`INSERT INTO comment_likes (user_id, comment_id, liked, disliked) VALUES (?, ?, false, true) ON CONFLICT (user_id, comment_id) DO UPDATE SET disliked = NOT comment_likes.disliked, liked = false`, userID, postID)
 	if err != nil {
 		log.Printf("Error toggling dislike: %v", err)
 		return err
@@ -385,3 +387,52 @@ func getPostCategories(postID int) ([]string, error) {
 
 	return categories, nil
 }
+
+// func getPostsCreatedByUser(userID int) ([]Post, error) {
+// 	rows, err := db.Query(`SELECT p.id, p.title, p.content, p.created_at, u.id, u.username, p.category
+//         FROM posts p JOIN users u ON p.author_id = u.id
+//         WHERE u.id = ?
+//         ORDER BY p.created_at DESC`, userID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer rows.Close()
+
+// 	var posts []Post
+// 	for rows.Next() {
+// 		var p Post
+// 		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username, &p.Category); err != nil {
+// 			return nil, err
+// 		}
+// 		posts = append(posts, p)
+// 	}
+// 	if err := rows.Err(); err != nil {
+// 		return nil, err
+// 	}
+// 	return posts, nil
+// }
+
+// func getPostsLikedByUser(userID int) ([]Post, error) {
+// 	rows, err := db.Query(`SELECT p.id, p.title, p.content, p.created_at, u.id, u.username, p.category
+//         FROM posts p JOIN users u ON p.author_id = u.id
+//         JOIN post_likes pl ON p.id = pl.post_id
+//         WHERE pl.user_id = ? AND pl.liked = 1
+//         ORDER BY p.created_at DESC`, userID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer rows.Close()
+
+// 	var posts []Post
+// 	for rows.Next() {
+// 		var p Post
+// 		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username, &p.Category); err != nil {
+// 			return nil, err
+// 		}
+// 		posts = append(posts, p)
+// 	}
+// 	if err := rows.Err(); err != nil {
+// 		return nil, err
+// 	}
+// 	return posts, nil
+// }

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Created Posts</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <a class="newpostbtn" href="/newpost">Create a new post</a>
+    <br>
+    <h1>Your Created Posts:</h1>
+    {{range .CreatedPosts}}
+    <div class="singlepost">
+        <h2>{{.Post.Title}}</h2>
+        <div>{{.Post.Content}}</div>
+        <br>
+    </div>
+    {{else}}
+    <p>You haven't created any posts yet.</p>
+    {{end}}
+    <p><a href="/">Back to the forum</a></p>
+</body>
+</html>
