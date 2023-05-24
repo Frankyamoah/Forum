@@ -13,6 +13,7 @@
     {{range .CreatedPosts}}
     <div class="singlepost">
         <h2>{{.Post.Title}}</h2>
+        <p>By {{.Post.Author.Username}}</p>
         <div>{{.Post.Content}}</div>
         <br>
     </div>

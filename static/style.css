@@ -1,4 +1,3 @@
-
 .registerbtn{
     margin-right: 100px;
     position: absolute;
@@ -26,7 +25,6 @@
     font-size: 20px;
     font-weight: bold;
     border-radius: 5px;
-   
 }
 .logoutbtn{
     margin-top: 30px;
@@ -42,7 +40,6 @@
     font-size: 20px;
     font-weight: bold;
     border-radius: 5px;
-   
 }
 .newpostbtn{
     margin-left: 100px;
@@ -57,12 +54,10 @@
     font-size: 20px;
     font-weight: bold;
     border-radius: 5px;
-   
 }
 .logoutbtn.move{
     transform: translateX(100%);
 }
-
 .loginbtn.move{
     transform: translateX(100%);
 }
@@ -75,9 +70,9 @@
 
 .inline-form {
     display: inline;
-  }
-  
-  .inline-form input[type="submit"] {
+}
+
+.inline-form input[type="submit"] {
     background: none;
     border: none;
     color: blue;
@@ -86,10 +81,9 @@
     font-size: inherit;
     font-family: inherit;
     padding: 0;
-  }
-  
-.postinfo{
-    
+}
+
+.postinfo {
     background-color: rgb(246, 196, 213);
     display: flex;
     flex-wrap: wrap;
@@ -99,8 +93,8 @@
     border-radius: 10px;
     width: 300px;
     padding: 5px;
-   
 }
+
 .post-title-author {
     flex: 100%;
 }

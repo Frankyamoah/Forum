@@ -388,51 +388,65 @@ func getPostCategories(postID int) ([]string, error) {
 	return categories, nil
 }
 
-// func getPostsCreatedByUser(userID int) ([]Post, error) {
-// 	rows, err := db.Query(`SELECT p.id, p.title, p.content, p.created_at, u.id, u.username, p.category
-//         FROM posts p JOIN users u ON p.author_id = u.id
-//         WHERE u.id = ?
-//         ORDER BY p.created_at DESC`, userID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer rows.Close()
+func getPostsCreatedByUser(userID int) ([]Post, error) {
+	rows, err := db.Query(`SELECT p.id, p.title, p.content, p.created_at, u.id, u.username,
+        GROUP_CONCAT(pc.category) as categories
+        FROM posts p JOIN users u ON p.author_id = u.id
+        LEFT JOIN posts_categories pc ON p.id = pc.post_id
+        WHERE u.id = ?
+        GROUP BY p.id
+        ORDER BY p.created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-// 	var posts []Post
-// 	for rows.Next() {
-// 		var p Post
-// 		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username, &p.Category); err != nil {
-// 			return nil, err
-// 		}
-// 		posts = append(posts, p)
-// 	}
-// 	if err := rows.Err(); err != nil {
-// 		return nil, err
-// 	}
-// 	return posts, nil
-// }
+	var posts []Post
+	for rows.Next() {
+		var p Post
+		var categories sql.NullString
+		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username, &categories); err != nil {
+			return nil, err
+		}
+		if categories.Valid {
+			p.Category = strings.Split(categories.String, ",")
+		}
+		posts = append(posts, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
 
-// func getPostsLikedByUser(userID int) ([]Post, error) {
-// 	rows, err := db.Query(`SELECT p.id, p.title, p.content, p.created_at, u.id, u.username, p.category
-//         FROM posts p JOIN users u ON p.author_id = u.id
-//         JOIN post_likes pl ON p.id = pl.post_id
-//         WHERE pl.user_id = ? AND pl.liked = 1
-//         ORDER BY p.created_at DESC`, userID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer rows.Close()
+func getPostsLikedByUser(userID int) ([]Post, error) {
+	rows, err := db.Query(`SELECT p.id, p.title, p.content, p.created_at, u.id, u.username,
+        GROUP_CONCAT(pc.category) as categories
+        FROM posts p JOIN users u ON p.author_id = u.id
+        JOIN post_likes pl ON p.id = pl.post_id
+        LEFT JOIN posts_categories pc ON p.id = pc.post_id
+        WHERE pl.user_id = ? AND pl.liked = 1
+        GROUP BY p.id
+        ORDER BY p.created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-// 	var posts []Post
-// 	for rows.Next() {
-// 		var p Post
-// 		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username, &p.Category); err != nil {
-// 			return nil, err
-// 		}
-// 		posts = append(posts, p)
-// 	}
-// 	if err := rows.Err(); err != nil {
-// 		return nil, err
-// 	}
-// 	return posts, nil
-// }
+	var posts []Post
+	for rows.Next() {
+		var p Post
+		var categories sql.NullString
+		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt, &p.Author.ID, &p.Author.Username, &categories); err != nil {
+			return nil, err
+		}
+		if categories.Valid {
+			p.Category = strings.Split(categories.String, ",")
+		}
+		posts = append(posts, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}

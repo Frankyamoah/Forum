@@ -42,8 +42,8 @@ func main() {
 	http.HandleFunc("/like", like)
 	http.HandleFunc("/dislike", dislike)
 	http.HandleFunc("/filter", filterHandler) // add this line
-	// http.HandleFunc("/createdposts", getCreatedPosts)
-	// http.HandleFunc("/likedposts", getLikedPosts)
+	http.HandleFunc("/createdposts", getCreatedPosts)
+	http.HandleFunc("/likedposts", getLikedPosts)
 
 	staticFileServer := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static", staticFileServer))

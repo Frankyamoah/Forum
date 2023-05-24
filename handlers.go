@@ -452,3 +452,87 @@ func filterHandler(w http.ResponseWriter, r *http.Request) {
 func joinStrings(strs []string, sep string) string {
 	return strings.Join(strs, sep)
 }
+
+// getLikedPosts handles getting all posts liked by the user.
+func getLikedPosts(w http.ResponseWriter, r *http.Request) {
+	session := make(map[string]interface{})
+	if cookie, err := r.Cookie("forum-session"); err == nil {
+		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+			log.Printf("Error decoding session: %v", err)
+		}
+	}
+
+	userID, loggedIn := session["user_id"].(int)
+	if !loggedIn {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	posts, err := getPostsLikedByUser(userID)
+	if err != nil {
+		log.Printf("Error getting liked posts: %v", err)
+		http.Error(w, "Error getting liked posts", http.StatusInternalServerError)
+		return
+	}
+
+	var likedPosts []struct {
+		Post Post
+	}
+	for _, post := range posts {
+		likedPosts = append(likedPosts, struct {
+			Post Post
+		}{Post: post})
+	}
+
+	data := struct {
+		LikedPosts []struct {
+			Post Post
+		}
+	}{
+		LikedPosts: likedPosts,
+	}
+
+	tpl.ExecuteTemplate(w, "likedposts.html", data)
+}
+
+// getCreatedPosts handles getting all posts created by the user.
+func getCreatedPosts(w http.ResponseWriter, r *http.Request) {
+	session := make(map[string]interface{})
+	if cookie, err := r.Cookie("forum-session"); err == nil {
+		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+			log.Printf("Error decoding session: %v", err)
+		}
+	}
+
+	userID, loggedIn := session["user_id"].(int)
+	if !loggedIn {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	posts, err := getPostsCreatedByUser(userID)
+	if err != nil {
+		log.Printf("Error getting created posts: %v", err)
+		http.Error(w, "Error getting created posts", http.StatusInternalServerError)
+		return
+	}
+
+	var createdPosts []struct {
+		Post Post
+	}
+	for _, post := range posts {
+		createdPosts = append(createdPosts, struct {
+			Post Post
+		}{Post: post})
+	}
+
+	data := struct {
+		CreatedPosts []struct {
+			Post Post
+		}
+	}{
+		CreatedPosts: createdPosts,
+	}
+
+	tpl.ExecuteTemplate(w, "createdposts.html", data)
+}
