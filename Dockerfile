@@ -18,7 +18,7 @@ COPY . .
 RUN go build -o myforum 
 
 # Expose the port on which the forum application runs
-EXPOSE 8080
+EXPOSE 1000
 
 # Run the forum application
 CMD ["./myforum"]
