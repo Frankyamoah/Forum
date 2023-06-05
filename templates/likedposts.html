@@ -7,19 +7,24 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <a class="newpostbtn" href="/newpost">Create a new post</a>
+    <br> <br><br><br>
+    <a id="createbtn" href="/newpost">Create a new post</a>
+   <h6 style="color: #2b2c2c;">.</h6>
+
+    <p ><a href="/" id="backtoforum">Back to the forum</a></p>
     <br>
-    <h1>Your Liked Posts:</h1>
+    <h1 id="lp">Your Liked Posts:</h1>
     {{range .LikedPosts}}
     <div class="singlepost">
-        <h2>{{.Post.Title}}</h2>
+        <h1>{{.Post.Title}}</h1>
         <p>By {{.Post.Author.Username}}</p>
-        <div>{{.Post.Content}}</div>
+        <P>Categories: {{join .Post.Category ", "}}</P>
+        <div id="postcontent">{{.Post.Content}}</div>
         <br>
     </div>
     {{else}}
     <p>You haven't liked any posts yet.</p>
     {{end}}
-    <p><a href="/">Back to the forum</a></p>
+   
 </body>
 </html>

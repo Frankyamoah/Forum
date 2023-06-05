@@ -7,16 +7,18 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Login</h1>
-    <form method="post" action="/login">
+    <div class="loginpge">
+        <h1>Login</h1>
+        <form method="post" action="/login" class="loginbox">
         <label for="username">Username:</label>
         <input type="text" name="username" required>
         <br>
         <label for="password">Password:</label>
         <input type="password" name="password" required>
         <br>
-        <input type="submit" value="Login">
+        <input type="submit" value="Login" id="sub">
     </form>
     <p>Don't have an account? <a href="/register">Register</a></p>
+</div>
 </body>
 </html>

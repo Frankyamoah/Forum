@@ -7,8 +7,9 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Register</h1>
-    <form method="post" action="/register">
+    <div class="loginpge">
+        <h1>Register</h1>
+        <form method="post" action="/register" class="loginbox">
         <label for="username">Username:</label>
         <input type="text" name="username" required>
         <br>
@@ -18,8 +19,9 @@
         <label for="email">Email:</label>
         <input type="email" name="email" required>
         <br>
-        <input type="submit" value="Register">
+        <input type="submit" value="Register" id="sub">
     </form>
-    <p>Already have an account? <a href="/login">Login</a></p>
+    <p>Already have an account? <a href="/login" >Login</a></p>
+</div>
 </body>
 </html>

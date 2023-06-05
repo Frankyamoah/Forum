@@ -8,14 +8,17 @@
 </head>
 <body>
     <a class="newpostbtn" href="/newpost">Create a new post</a>
-    </div>
+
     <br>
+    <div id="singlepostcard">
     <div class="singlepost">
     <h1>{{.Post.Title}}</h1>
     <!--on {{.Post.CreatedAt}}-->
     <p>By {{.Post.Author.Username}} </p>
-    <div>{{.Post.Content}}</div>
-    <P>Categories: {{join .Post.Category ", "}}</P>
+    <P>Categories: {{join .Post.Category ", "}}</P> 
+    <br> <br> 
+    <div id="postcontent">{{.Post.Content}}</div>
+   
    
     <br>
 <div class="comments">
@@ -50,12 +53,13 @@
       <input type="hidden" name="post_id" value="{{.Post.ID}}">
       <textarea name="content" rows="5" cols="50" required></textarea><br>
       
-      <input type="submit" value="Submit">
+      <input type="submit" value="Submit"  id="commentsubmit">
   </form>
 </div>
-</div>
+
   
     <p><a href="/">Back to the forum</a></p>
-    
+  </div>
+  </div>
 </body>
 </html>

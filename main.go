@@ -48,6 +48,6 @@ func main() {
 	staticFileServer := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static", staticFileServer))
 
-	fmt.Println("Listening on :8080...")
-	http.ListenAndServe(":8080", nil)
+	fmt.Println("Listening on :1000...")
+	http.ListenAndServe(":1000", nil)
 }
