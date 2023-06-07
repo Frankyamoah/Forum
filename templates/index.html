@@ -5,87 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forum</title>    
     <link rel="stylesheet" href="/static/style.css">
-
 </head>
 <body>
-  <div id="loginandregister">
-    {{if .Username}}
-    <p class="welcome">Welcome, {{.Username}}! <a class="logoutbtn" href="/logout">Logout</a></p>
-    {{else}}
+    <header>
+        <div id="loginandregister">
+            <div class="welcomelog">
+            {{if .Username}}
+            <p class="welcome">Welcome, {{.Username}}! <br><br><a class="logoutbtn" href="/logout">Logout</a></p>
+            {{else}}
+            <p>
+                <a class="loginbtn" href="/login">Login</a>  
+                <a class="registerbtn" href="/register">Register</a>
+            </p>
+            {{end}}
+        </div>
+            <div class="userposts">
+            {{if .Username}}
+            <a class="userp" href="/createdposts">I Created</a>
+            <a class="userp" href="/likedposts">I Liked</a>
+            {{end}}
     
-        <p><a class="loginbtn" href="/login">Login</a>  <a class="registerbtn" href="/register">Register</a></p>
-    </div>
-    {{end}}
-
-    {{if .Username}}
-    <a class="newpostbtn" href="/newpost">Create a new post</a>
-    {{end}}
-    </div>
-  <div id="postcontainer">
-      
-    <h1>Posts</h1>
-    <ol>
-      <div>
-        <h3>Filter by category:</h3>
-        <form method="get" action="/filter" id="category_form">
-          <label>Categories:</label><br>
-          <input type="checkbox" name="category[]" value="Gaming">
-          <label for="category">Gaming</label><br>
-          
-          <input type="checkbox" name="category[]" value="Technology">
-          <label for="category">Technology</label><br>
-          
-          <input type="checkbox" name="category[]" value="Lifestyle">
-          <label for="category">Lifestyle</label><br>
-          
-          <input type="checkbox" name="category[]" value="Travel">
-          <label for="category">Travel</label><br>
-  
-          <input type="checkbox" name="category[]" value="Cooking">
-          <label for="category">Cooking</label><br>
-  
-          <input type="checkbox" name="category[]" value="Other">
-          <label for="category">Other</label><br>
-          
-            <input type="submit" value="Filter">
-            <a href="/">Clear filter</a>
-        </form>
-    </div>
-    <br>
-    <br>
-    <br>
-    <div class="postdisplay">
-    {{range .Posts}}
-    <div class="postinfo">
-     
-        <a href="/viewpost?id={{.ID}}">{{.Title}}</a>&nbsp;&nbsp;by {{.Author.Username}} 
-
-
-      <div class="likesanddislikes">
+            {{if .Username}}
+            <a class="newpostbtn" href="/newpost">Create a new post</a>
+            {{end}}
+        </div>
+        </div>
+    </header>
     
-        <form class="inline-form" action="/like" method="POST">
-          <input type="hidden" name="post_id" value="{{.ID}}">
-          <input type="submit" value="Like">
-        </form>
-        <form class="inline-form" action="/dislike" method="POST">
-          <input type="hidden" name="post_id" value="{{.ID}}">
-          <input type="submit" value="Dislike">
-        </form>
-      </div>
-        {{ $likes := GetLikeCount .ID "post" }}
-  {{ $dislikes := GetDislikeCount .ID "post" }}
-  {{if eq $likes 0}}0{{else}}{{$likes}}{{end}} Likes &nbsp;&nbsp;
-  {{if eq $dislikes 0}}0{{else}}{{$dislikes}}{{end}} Dislikes
-     
+    <div id="postcontainer">
+        <div class="postbar">
+        <h1>Posts</h1>
+        <div>
+            <h3>Filter by category:</h3>
+            
+            <form method="get" action="/filter" id="category_form">
+                <label>Categories:</label><br>
+                <input type="checkbox" name="category[]" value="Gaming">
+                <label for="category">Gaming</label><br>
+          
+                <input type="checkbox" name="category[]" value="Technology">
+                <label for="category">Technology</label><br>
+          
+                <input type="checkbox" name="category[]" value="Lifestyle">
+                <label for="category">Lifestyle</label><br>
+          
+                <input type="checkbox" name="category[]" value="Travel">
+                <label for="category">Travel</label><br>
   
-        
-
+                <input type="checkbox" name="category[]" value="Cooking">
+                <label for="category">Cooking</label><br>
+  
+                <input type="checkbox" name="category[]" value="Other">
+                <label for="category">Other</label><br>
+          
+                <input type="submit" value="Filter">
+                <a href="/">Clear filter</a>
+            </form>
+        </div>
     </div>
-{{end}}
-</div>
-    </ol>
+        </div>
+        <br>
+        <br>
+        <br>
+        <div class="postdisplay">
+            {{range .Posts}}
+            <div class="postinfo">
+                <h2><a href="/viewpost?id={{.ID}}">{{.Title}}</a></h2>&nbsp;&nbsp;   <a class="authorname">by {{.Author.Username}} </a>
+                
+                <div class="likes"></div>
+            <div class="likesanddislikes">
+                <form class="inline-form" action="/like" method="POST">
+                    <input type="hidden" name="post_id" value="{{.ID}}">
+                    <input type="submit" value="Like">
+                </form>
+                <form class="inline-form" action="/dislike" method="POST">
+                    <input type="hidden" name="post_id" value="{{.ID}}">
+                    <input type="submit" value="Dislike">
+                </form>
+                
+            </div>
 
-  </div>
-  
+
+        <p> {{ $likes := GetLikeCount .ID "post" }}
+            {{ $dislikes := GetDislikeCount .ID "post" }}
+            {{if eq $likes 0}}0{{else}}{{$likes}}{{end}} Likes &nbsp;&nbsp;
+            {{if eq $dislikes 0}}0{{else}}{{$dislikes}}{{end}} Dislikes
+        </div> 
+        {{end}}
+                </div> 
+           </p>
+        </div>
+    </div>
 </body>
 </html>
