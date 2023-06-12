@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -19,7 +21,14 @@ var (
 
 //var store = sessions.NewCookieStore([]byte("ForumProject"))
 
+// login handles user login.
+// var (
+// 	sessionMap      = make(map[int]string)
+// 	sessionMapMutex = &sync.Mutex{}
+// )
+
 func index(w http.ResponseWriter, r *http.Request) {
+	// Validate the session first.
 	session := make(map[string]interface{})
 	if cookie, err := r.Cookie("forum-session"); err == nil {
 		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
@@ -39,7 +48,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 			HttpOnly: true,
 			MaxAge:   300 * 60, // 5 mins
 		}
-
 		http.SetCookie(w, cookie)
 	}
 
@@ -50,42 +58,112 @@ func index(w http.ResponseWriter, r *http.Request) {
 	} else {
 		posts = getPostsByCategory(categoryFilters)
 	}
-
 	for _, post := range posts {
 		post.Likes = GetLikeCount(post.ID, "post")
 		post.Dislikes = GetDislikeCount(post.ID, "post")
+	}
+
+	user, err := getUserFromSession(session)
+	if err != nil {
+		// Handle the error
 	}
 
 	data := struct {
 		Username string
 		Posts    []Post
 	}{
-		Username: getUsernameFromSession(session),
+		Username: user.Username,
 		Posts:    posts,
 	}
-
 	tpl.ExecuteTemplate(w, "index.html", data)
 }
 
-// login handles user login.
+func generateUUID() (string, error) {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	uuid := fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+	return uuid, nil
+}
+
+func validateSession(w http.ResponseWriter, r *http.Request) (User, map[string]interface{}) {
+	session := make(map[string]interface{})
+	cookie, err := r.Cookie("forum-session")
+	if err == nil {
+		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
+			log.Printf("Error decoding session: %v", err)
+		}
+	}
+
+	// Print session data for troubleshooting
+	fmt.Println("Session Data Of User Logged Out:", session)
+
+	_, loggedIn := session["user_id"].(int)
+	sessionID, ok := session["session_id"].(string)
+
+	if loggedIn && ok {
+		user, err := getUserFromSession(session)
+		if err != nil {
+			log.Printf("Error getting user: %v", err)
+		} else if user.SessionID == sessionID {
+			// the session is valid
+			return user, session
+		}
+	}
+
+	// Remove session data
+	session = make(map[string]interface{})
+	encodedSession, err := store.Encode("forum-session", session)
+	if err != nil {
+		log.Printf("Error encoding session: %v", err)
+	} else {
+		cookie := &http.Cookie{
+			Name:     "forum-session",
+			Value:    encodedSession,
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   -1, // Delete the cookie
+		}
+		http.SetCookie(w, cookie)
+	}
+
+	// Redirect the user back to the index page as a logged out user
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return User{}, session
+}
+
 func login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		username := r.FormValue("username")
 		password := r.FormValue("password")
-
 		userID, err := authenticateUser(username, password)
 		if err == nil {
+			fmt.Println("Successful login") // Print statement for successful login
 			session := make(map[string]interface{})
 			if cookie, err := r.Cookie("forum-session"); err == nil {
 				if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
 					log.Printf("Error decoding session: %v", err)
 				}
 			}
+			// Generate a new session ID
+			sessionID, err := generateUUID()
+			if err != nil {
+				// Handle error
+				log.Printf("Error generating session ID: %v", err)
+			} else {
+				session["session_id"] = sessionID
+				// Update session ID in the database
+				err = updateUserSessionID(userID, sessionID)
+				if err != nil {
+					// Handle error
+					log.Printf("Error updating session ID: %v", err)
+				} else {
+					fmt.Println("Session ID updated") // Print statement for session ID update
+				}
+			}
 
-			// set the session's max age to 2 minutes
-			// session.Options.MaxAge = 300 * 60 // i5 secsonds
-
-			// update the session's last activity time
 			session["last_activity"] = time.Now().Unix()
 			session["user_id"] = userID
 			encodedSession, err := store.Encode("forum-session", session)
@@ -97,15 +175,16 @@ func login(w http.ResponseWriter, r *http.Request) {
 					Value:    encodedSession,
 					Path:     "/",
 					HttpOnly: true,
-					MaxAge:   300 * 60, // 5 mins, equivalent to session.Options.MaxAge
+					MaxAge:   300 * 60, // 5 mins
 				}
 				http.SetCookie(w, cookie)
 			}
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
+		} else {
+			fmt.Println("Unsuccessful login") // Print statement for unsuccessful login
 		}
 	}
-
 	tpl.ExecuteTemplate(w, "login.html", nil)
 }
 
@@ -191,22 +270,10 @@ func logout(w http.ResponseWriter, r *http.Request) {
 
 // newPost handles creating a new forum post.
 func newPost(w http.ResponseWriter, r *http.Request) {
-	session := make(map[string]interface{})
-	if cookie, err := r.Cookie("forum-session"); err == nil {
-		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
-			log.Printf("Error decoding session: %v", err)
-		}
-	}
+	user, _ := validateSession(w, r) // Second return value (session) is ignored with _
 
-	// set the session's max age to 2 minutes
-	// session.Options.MaxAge = 300 * 60 // i5 secsonds
-
-	// update the session's last activity time
-	session["last_activity"] = time.Now().Unix()
-
-	userID, loggedIn := session["user_id"].(int)
-	if !loggedIn {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	if user.ID == 0 {
+		// User is not logged in, we've already handled redirect in validateSession
 		return
 	}
 
@@ -214,7 +281,8 @@ func newPost(w http.ResponseWriter, r *http.Request) {
 		title := r.FormValue("title")
 		content := r.FormValue("content")
 		categories := r.Form["category[]"]
-		createPost(title, content, userID, categories)
+
+		createPost(title, content, user.ID, categories)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -294,36 +362,10 @@ func addComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the current user ID from the session
-	session := make(map[string]interface{})
-	if cookie, err := r.Cookie("forum-session"); err == nil {
-		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
-			log.Printf("Error decoding session: %v", err)
-		}
-	}
+	user, _ := validateSession(w, r) // Second return value (session) is ignored with _
 
-	// set the session's max age to 2 minutes
-	// session.Options.MaxAge = 300 * 60 // i5 secsonds
-
-	// update the session's last activity time
-	session["last_activity"] = time.Now().Unix()
-	encodedSession, err := store.Encode("forum-session", session)
-	if err != nil {
-		log.Printf("Error encoding session: %v", err)
-	} else {
-		cookie := &http.Cookie{
-			Name:     "forum-session",
-			Value:    encodedSession,
-			Path:     "/",
-			HttpOnly: true,
-			MaxAge:   300 * 60, // 5 mins, equivalent to session.Options.MaxAge
-		}
-		http.SetCookie(w, cookie)
-	}
-
-	userID, ok := session["user_id"].(int)
-	if !ok {
-		http.Error(w, "User not logged in", http.StatusUnauthorized)
+	if user.ID == 0 {
+		// User is not logged in, we've already handled redirect in validateSession
 		return
 	}
 
@@ -337,7 +379,7 @@ func addComment(w http.ResponseWriter, r *http.Request) {
 	content := r.FormValue("content")
 
 	// Create the comment using the createComment function
-	err = createComment(userID, postID, content)
+	err = createComment(user.ID, postID, content)
 	if err != nil {
 		http.Error(w, "Error creating comment", http.StatusInternalServerError)
 		return
@@ -354,22 +396,23 @@ func like(w http.ResponseWriter, r *http.Request) {
 }
 
 func dislike(w http.ResponseWriter, r *http.Request) {
-	//log.Printf("Like/Dislike called, request: %+v\n", r)
+	// Validate the session first
+	user, _ := validateSession(w, r) // Second return value (session) is ignored with _
+
+	if user.ID == 0 {
+		// User is not logged in, we've already handled redirect in validateSession
+		return
+	}
 
 	handleLikeOrDislike(w, r, false)
 }
 
 func handleLikeOrDislike(w http.ResponseWriter, r *http.Request, isLike bool) {
-	session := make(map[string]interface{})
-	if cookie, err := r.Cookie("forum-session"); err == nil {
-		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
-			log.Printf("Error decoding session: %v", err)
-		}
-	}
+	// Validate the session first
+	user, _ := validateSession(w, r) // Second return value (session) is ignored with _
 
-	userID, loggedIn := session["user_id"].(int)
-	if !loggedIn {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	if user.ID == 0 {
+		// User is not logged in, we've already handled redirect in validateSession
 		return
 	}
 
@@ -383,15 +426,15 @@ func handleLikeOrDislike(w http.ResponseWriter, r *http.Request, isLike bool) {
 	var err error
 	if postErr == nil { // Liking or disliking a post
 		if isLike {
-			err = toggleLikePost(userID, postID)
+			err = toggleLikePost(user.ID, postID)
 		} else {
-			err = toggleDislikePost(userID, postID)
+			err = toggleDislikePost(user.ID, postID)
 		}
 	} else { // Liking or disliking a comment
 		if isLike {
-			err = toggleLikeComment(userID, commentID)
+			err = toggleLikeComment(user.ID, commentID)
 		} else {
-			err = toggleDislikeComment(userID, commentID)
+			err = toggleDislikeComment(user.ID, commentID)
 		}
 	}
 
@@ -435,15 +478,22 @@ func filterHandler(w http.ResponseWriter, r *http.Request) {
 		posts[i].Dislikes = GetDislikeCount(post.ID, "post")
 	}
 
+	user, err := getUserFromSession(session)
+	if err != nil {
+		log.Printf("Error getting user from session: %v", err)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
 	data := struct {
 		Username string
 		Posts    []Post
 	}{
-		Username: getUsernameFromSession(session),
+		Username: user.Username,
 		Posts:    posts,
 	}
 
-	err := tpl.ExecuteTemplate(w, "index.html", data)
+	err = tpl.ExecuteTemplate(w, "index.html", data)
 	if err != nil {
 		log.Printf("Error while executing template: %v", err)
 	}
@@ -455,20 +505,14 @@ func joinStrings(strs []string, sep string) string {
 
 // getLikedPosts handles getting all posts liked by the user.
 func getLikedPosts(w http.ResponseWriter, r *http.Request) {
-	session := make(map[string]interface{})
-	if cookie, err := r.Cookie("forum-session"); err == nil {
-		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
-			log.Printf("Error decoding session: %v", err)
-		}
-	}
+	// Validate the session first
+	user, _ := validateSession(w, r) // Second return value (session) is ignored with _
 
-	userID, loggedIn := session["user_id"].(int)
-	if !loggedIn {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	if user.ID == 0 {
+		// User is not logged in, we've already handled redirect in validateSession
 		return
 	}
-
-	posts, err := getPostsLikedByUser(userID)
+	posts, err := getPostsLikedByUser(user.ID)
 	if err != nil {
 		log.Printf("Error getting liked posts: %v", err)
 		http.Error(w, "Error getting liked posts", http.StatusInternalServerError)
@@ -497,20 +541,15 @@ func getLikedPosts(w http.ResponseWriter, r *http.Request) {
 
 // getCreatedPosts handles getting all posts created by the user.
 func getCreatedPosts(w http.ResponseWriter, r *http.Request) {
-	session := make(map[string]interface{})
-	if cookie, err := r.Cookie("forum-session"); err == nil {
-		if err := store.Decode("forum-session", cookie.Value, &session); err != nil {
-			log.Printf("Error decoding session: %v", err)
-		}
-	}
+	// Validate the session first
+	user, _ := validateSession(w, r) // Second return value (session) is ignored with _
 
-	userID, loggedIn := session["user_id"].(int)
-	if !loggedIn {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	if user.ID == 0 {
+		// User is not logged in, we've already handled redirect in validateSession
 		return
 	}
 
-	posts, err := getPostsCreatedByUser(userID)
+	posts, err := getPostsCreatedByUser(user.ID)
 	if err != nil {
 		log.Printf("Error getting created posts: %v", err)
 		http.Error(w, "Error getting created posts", http.StatusInternalServerError)

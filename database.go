@@ -10,9 +10,10 @@ import (
 )
 
 type User struct {
-	ID       int
-	Username string
-	Email    string
+	ID        int
+	Username  string
+	Email     string
+	SessionID string
 }
 
 type Post struct {
@@ -95,20 +96,29 @@ func registerUser(username, password, email string) error {
 	return err
 }
 
-func getUsernameFromSession(session map[string]interface{}) string {
+func getUserFromSession(session map[string]interface{}) (User, error) {
 	userID, loggedIn := session["user_id"].(int)
 	if !loggedIn {
-		return ""
+		return User{}, errors.New("User not logged in")
 	}
 
-	var username string
-	err := db.QueryRow("SELECT username FROM users WHERE id = ?", userID).Scan(&username)
+	user := User{}
+	err := db.QueryRow("SELECT id, username, email, SessionID FROM users WHERE id = ?", userID).Scan(&user.ID, &user.Username, &user.Email, &user.SessionID)
 	if err != nil {
-		panic(err)
+		return User{}, err
 	}
 
-	return username
+	return user, nil
 }
+
+func updateUserSessionID(userID int, sessionID string) error {
+	_, err := db.Exec("UPDATE users SET SessionID = ? WHERE id = ?", sessionID, userID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func createPost(title string, content string, authorID int, categories []string) int {
 	// Step 1: Insert the post into the 'posts' table
 	// removed 'category' from the query below because it isn't being used here
