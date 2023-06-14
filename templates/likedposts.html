@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liked Posts</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <br> <br><br><br>
+    <a id="createbtn" href="/newpost">Create a new post</a>
+   <h6 style="color: #2b2c2c;">.</h6>
+
+    <p ><a href="/" id="backtoforum">Back to the forum</a></p>
+    <br>
+    <h1 id="lp">Your Liked Posts:</h1>
+    {{range .LikedPosts}}
+    <div class="singlepost">
+        <h1>{{.Post.Title}}</h1>
+        <p>By {{.Post.Author.Username}}</p>
+        <P>Categories: {{join .Post.Category ", "}}</P>
+        <div id="postcontent">{{.Post.Content}}</div>
+        <br>
+    </div>
+    {{else}}
+    <p>You haven't liked any posts yet.</p>
+    {{end}}
+   
+</body>
+</html>
