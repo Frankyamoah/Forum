@@ -201,6 +201,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 		// Check if the form inputs are not empty
 		if username == "" || password == "" || email == "" {
+			fmt.Println("all fields required")
 			http.Error(w, "All fields are required", http.StatusBadRequest)
 			return
 		}
