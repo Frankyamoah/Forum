@@ -37,7 +37,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Error decoding session: %v", err)
 		}
 	}
-
+	//add spare cimment for git
 	session["last_activity"] = time.Now().Unix()
 	encodedSession, err := store.Encode("forum-session", session)
 	if err != nil {
