@@ -38,13 +38,13 @@ header p {
 .userposts {
     margin-left: 1800px;
     margin-top: -30px;
-    font-size: x-large;
+    font-size: medium;
 }
 
 .welcomelog {
     margin-top: -15px;
     width: fit-content;
-    font-size: x-large;
+    font-size: medium;
 }
 
 .loginbtn,
