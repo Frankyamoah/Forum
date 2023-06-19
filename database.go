@@ -121,7 +121,6 @@ func updateUserSessionID(userID int, sessionID string) error {
 
 func createPost(title string, content string, authorID int, categories []string) int {
 	// Step 1: Insert the post into the 'posts' table
-	// removed 'category' from the query below because it isn't being used here
 	query := "INSERT INTO posts (title, content, author_id, created_at) VALUES (?, ?, ?, ?)"
 	stmt, err := db.Prepare(query)
 	if err != nil {

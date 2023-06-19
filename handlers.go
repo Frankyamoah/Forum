@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/securecookie"
@@ -18,6 +19,7 @@ var (
 
 	store = securecookie.New(hashKey, blockKey)
 )
+var once sync.Once
 
 //var store = sessions.NewCookieStore([]byte("ForumProject"))
 
@@ -66,6 +68,9 @@ func index(w http.ResponseWriter, r *http.Request) {
 	user, err := getUserFromSession(session)
 	if err != nil {
 		// Handle the error
+		once.Do(func() {
+			fmt.Print("User Not Logged in or needs to Register ")
+		})
 	}
 
 	data := struct {
@@ -182,6 +187,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		} else {
+			http.Error(w, "Error 400 incorrect username or password", http.StatusBadRequest)
 			fmt.Println("Unsuccessful login") // Print statement for unsuccessful login
 		}
 	}
@@ -467,6 +473,7 @@ func filterHandler(w http.ResponseWriter, r *http.Request) {
 	categories, ok := r.URL.Query()["category[]"]
 	if !ok {
 		log.Println("No categories found in the form data")
+		http.Error(w, "error 400", http.StatusBadRequest)
 		// Handle the error or set a default behavior
 		// For example, you can redirect to the home page or show an error message.
 	}
@@ -515,7 +522,7 @@ func getLikedPosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := getPostsLikedByUser(user.ID)
 	if err != nil {
 		log.Printf("Error getting liked posts: %v", err)
-		http.Error(w, "Error getting liked posts", http.StatusInternalServerError)
+		http.Error(w, "Error 500 problem getting liked posts", http.StatusInternalServerError)
 		return
 	}
 
@@ -552,7 +559,7 @@ func getCreatedPosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := getPostsCreatedByUser(user.ID)
 	if err != nil {
 		log.Printf("Error getting created posts: %v", err)
-		http.Error(w, "Error getting created posts", http.StatusInternalServerError)
+		http.Error(w, "Error 500 getting created posts", http.StatusInternalServerError)
 		return
 	}
 
